@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/Wei-Shaw/sub2api/internal/pkg/ssutil"
 	utls "github.com/refraction-networking/utls"
 	"golang.org/x/net/proxy"
 )
@@ -48,6 +49,12 @@ type HTTPProxyDialer struct {
 // SOCKS5ProxyDialer creates TLS connections through SOCKS5 proxies with custom fingerprints.
 // It uses golang.org/x/net/proxy to establish the SOCKS5 tunnel.
 type SOCKS5ProxyDialer struct {
+	profile  *Profile
+	proxyURL *url.URL
+}
+
+// ShadowsocksProxyDialer creates TLS connections through Shadowsocks proxies with custom fingerprints.
+type ShadowsocksProxyDialer struct {
 	profile  *Profile
 	proxyURL *url.URL
 }
@@ -136,6 +143,11 @@ func NewHTTPProxyDialer(profile *Profile, proxyURL *url.URL) *HTTPProxyDialer {
 // It establishes a SOCKS5 tunnel before performing TLS handshake with custom fingerprint.
 func NewSOCKS5ProxyDialer(profile *Profile, proxyURL *url.URL) *SOCKS5ProxyDialer {
 	return &SOCKS5ProxyDialer{profile: profile, proxyURL: proxyURL}
+}
+
+// NewShadowsocksProxyDialer creates a new TLS fingerprint dialer that works through Shadowsocks proxies.
+func NewShadowsocksProxyDialer(profile *Profile, proxyURL *url.URL) *ShadowsocksProxyDialer {
+	return &ShadowsocksProxyDialer{profile: profile, proxyURL: proxyURL}
 }
 
 // DialTLSContext establishes a TLS connection through SOCKS5 proxy with the configured fingerprint.
@@ -247,6 +259,20 @@ func (d *HTTPProxyDialer) DialTLSContext(ctx context.Context, network, addr stri
 	slog.Debug("tls_fingerprint_http_proxy_tunnel_established")
 
 	// Step 4: Perform TLS handshake on the tunnel with utls fingerprint
+	return performTLSHandshake(ctx, conn, d.profile, addr)
+}
+
+// DialTLSContext establishes a TLS connection through Shadowsocks proxy with the configured fingerprint.
+// Flow: SS CONNECT to target -> TLS handshake with utls on the encrypted stream.
+func (d *ShadowsocksProxyDialer) DialTLSContext(ctx context.Context, network, addr string) (net.Conn, error) {
+	slog.Debug("tls_fingerprint_ss_connecting", "proxy", d.proxyURL.Host, "target", addr)
+
+	conn, err := ssutil.DialContext(ctx, d.proxyURL, network, addr)
+	if err != nil {
+		slog.Debug("tls_fingerprint_ss_connect_failed", "error", err)
+		return nil, fmt.Errorf("ss connect: %w", err)
+	}
+
 	return performTLSHandshake(ctx, conn, d.profile, addr)
 }
 
