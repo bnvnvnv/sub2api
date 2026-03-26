@@ -238,6 +238,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'close'): void
+  (e: 'tested'): void
 }>()
 
 const terminalRef = ref<HTMLElement | null>(null)
@@ -422,6 +423,7 @@ const startTest = async () => {
     status.value = 'error'
     errorMessage.value = error.message || 'Unknown error'
     addLine(`Error: ${errorMessage.value}`, 'text-red-400')
+    emit('tested')
   }
 }
 
@@ -479,6 +481,7 @@ const handleEvent = (event: {
         status.value = 'error'
         errorMessage.value = event.error || 'Test failed'
       }
+      emit('tested')
       break
 
     case 'error':
@@ -488,6 +491,7 @@ const handleEvent = (event: {
         addLine(streamingContent.value, 'text-green-300')
         streamingContent.value = ''
       }
+      emit('tested')
       break
   }
 }

@@ -64,6 +64,8 @@ type openAIAccountTestRepo struct {
 	updatedExtra  map[string]any
 	rateLimitedID int64
 	rateLimitedAt *time.Time
+	errorID       int64
+	errorMsg      string
 }
 
 func (r *openAIAccountTestRepo) UpdateExtra(_ context.Context, _ int64, updates map[string]any) error {
@@ -74,6 +76,12 @@ func (r *openAIAccountTestRepo) UpdateExtra(_ context.Context, _ int64, updates 
 func (r *openAIAccountTestRepo) SetRateLimited(_ context.Context, id int64, resetAt time.Time) error {
 	r.rateLimitedID = id
 	r.rateLimitedAt = &resetAt
+	return nil
+}
+
+func (r *openAIAccountTestRepo) SetError(_ context.Context, id int64, errorMsg string) error {
+	r.errorID = id
+	r.errorMsg = errorMsg
 	return nil
 }
 
@@ -144,4 +152,31 @@ func TestAccountTestService_OpenAI429PersistsSnapshotAndRateLimit(t *testing.T) 
 	if account.RateLimitResetAt != nil && repo.rateLimitedAt != nil {
 		require.WithinDuration(t, *repo.rateLimitedAt, *account.RateLimitResetAt, time.Second)
 	}
+}
+
+func TestAccountTestService_TestAccountConnectionFailureMarksAccountError(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ctx, _ := newSoraTestContext()
+
+	resp := newJSONResponse(http.StatusUnauthorized, `{"error":{"message":"invalid token"}}`)
+	repo := &openAIAccountTestRepo{
+		mockAccountRepoForGemini: mockAccountRepoForGemini{
+			accountsByID: map[int64]*Account{
+				77: {
+					ID:          77,
+					Platform:    PlatformOpenAI,
+					Type:        AccountTypeOAuth,
+					Concurrency: 1,
+					Credentials: map[string]any{"access_token": "bad-token"},
+				},
+			},
+		},
+	}
+	upstream := &queuedHTTPUpstream{responses: []*http.Response{resp}}
+	svc := &AccountTestService{accountRepo: repo, httpUpstream: upstream}
+
+	err := svc.TestAccountConnection(ctx, 77, "gpt-5.4", "")
+	require.Error(t, err)
+	require.Equal(t, int64(77), repo.errorID)
+	require.Contains(t, repo.errorMsg, "API returned 401")
 }

@@ -159,7 +159,7 @@ func createTestPayload(modelID string) (map[string]any, error) {
 // TestAccountConnection tests an account's connection by sending a test request
 // All account types use full Claude Code client characteristics, only auth header differs
 // modelID is optional - if empty, defaults to claude.DefaultTestModel
-func (s *AccountTestService) TestAccountConnection(c *gin.Context, accountID int64, modelID string, prompt string) error {
+func (s *AccountTestService) TestAccountConnection(c *gin.Context, accountID int64, modelID string, prompt string) (testErr error) {
 	ctx := c.Request.Context()
 
 	// Get account
@@ -167,6 +167,14 @@ func (s *AccountTestService) TestAccountConnection(c *gin.Context, accountID int
 	if err != nil {
 		return s.sendErrorAndEnd(c, "Account not found")
 	}
+	defer func() {
+		if testErr == nil || account == nil || s.accountRepo == nil {
+			return
+		}
+		if setErr := s.accountRepo.SetError(ctx, account.ID, testErr.Error()); setErr != nil {
+			log.Printf("failed to persist account test error for account %d: %v", account.ID, setErr)
+		}
+	}()
 
 	// Route to platform-specific test method
 	if account.IsOpenAI() {
