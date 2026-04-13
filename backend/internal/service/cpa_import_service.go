@@ -228,7 +228,7 @@ func (s *CPAImportService) findExistingAccountBySourceKeys(ctx context.Context, 
 		accounts, pageInfo, err := s.accountRepo.ListWithFilters(ctx, pagination.PaginationParams{
 			Page:     page,
 			PageSize: 100,
-		}, platform, "", "", "", 0)
+		}, platform, "", "", "", 0, "")
 		if err != nil {
 			return nil, err
 		}
