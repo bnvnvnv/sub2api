@@ -15,6 +15,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/account"
 	"github.com/Wei-Shaw/sub2api/ent/apikey"
 	"github.com/Wei-Shaw/sub2api/ent/group"
+	"github.com/Wei-Shaw/sub2api/ent/openaiwebthread"
 	"github.com/Wei-Shaw/sub2api/ent/predicate"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
@@ -612,6 +613,21 @@ func (_u *GroupUpdate) AddSubscriptions(v ...*UserSubscription) *GroupUpdate {
 	return _u.AddSubscriptionIDs(ids...)
 }
 
+// AddOpenaiWebThreadIDs adds the "openai_web_threads" edge to the OpenAIWebThread entity by IDs.
+func (_u *GroupUpdate) AddOpenaiWebThreadIDs(ids ...int64) *GroupUpdate {
+	_u.mutation.AddOpenaiWebThreadIDs(ids...)
+	return _u
+}
+
+// AddOpenaiWebThreads adds the "openai_web_threads" edges to the OpenAIWebThread entity.
+func (_u *GroupUpdate) AddOpenaiWebThreads(v ...*OpenAIWebThread) *GroupUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddOpenaiWebThreadIDs(ids...)
+}
+
 // AddUsageLogIDs adds the "usage_logs" edge to the UsageLog entity by IDs.
 func (_u *GroupUpdate) AddUsageLogIDs(ids ...int64) *GroupUpdate {
 	_u.mutation.AddUsageLogIDs(ids...)
@@ -723,6 +739,27 @@ func (_u *GroupUpdate) RemoveSubscriptions(v ...*UserSubscription) *GroupUpdate 
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveSubscriptionIDs(ids...)
+}
+
+// ClearOpenaiWebThreads clears all "openai_web_threads" edges to the OpenAIWebThread entity.
+func (_u *GroupUpdate) ClearOpenaiWebThreads() *GroupUpdate {
+	_u.mutation.ClearOpenaiWebThreads()
+	return _u
+}
+
+// RemoveOpenaiWebThreadIDs removes the "openai_web_threads" edge to OpenAIWebThread entities by IDs.
+func (_u *GroupUpdate) RemoveOpenaiWebThreadIDs(ids ...int64) *GroupUpdate {
+	_u.mutation.RemoveOpenaiWebThreadIDs(ids...)
+	return _u
+}
+
+// RemoveOpenaiWebThreads removes "openai_web_threads" edges to OpenAIWebThread entities.
+func (_u *GroupUpdate) RemoveOpenaiWebThreads(v ...*OpenAIWebThread) *GroupUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveOpenaiWebThreadIDs(ids...)
 }
 
 // ClearUsageLogs clears all "usage_logs" edges to the UsageLog entity.
@@ -1158,6 +1195,51 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(usersubscription.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.OpenaiWebThreadsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.OpenaiWebThreadsTable,
+			Columns: []string{group.OpenaiWebThreadsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(openaiwebthread.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedOpenaiWebThreadsIDs(); len(nodes) > 0 && !_u.mutation.OpenaiWebThreadsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.OpenaiWebThreadsTable,
+			Columns: []string{group.OpenaiWebThreadsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(openaiwebthread.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.OpenaiWebThreadsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.OpenaiWebThreadsTable,
+			Columns: []string{group.OpenaiWebThreadsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(openaiwebthread.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {
@@ -1920,6 +2002,21 @@ func (_u *GroupUpdateOne) AddSubscriptions(v ...*UserSubscription) *GroupUpdateO
 	return _u.AddSubscriptionIDs(ids...)
 }
 
+// AddOpenaiWebThreadIDs adds the "openai_web_threads" edge to the OpenAIWebThread entity by IDs.
+func (_u *GroupUpdateOne) AddOpenaiWebThreadIDs(ids ...int64) *GroupUpdateOne {
+	_u.mutation.AddOpenaiWebThreadIDs(ids...)
+	return _u
+}
+
+// AddOpenaiWebThreads adds the "openai_web_threads" edges to the OpenAIWebThread entity.
+func (_u *GroupUpdateOne) AddOpenaiWebThreads(v ...*OpenAIWebThread) *GroupUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddOpenaiWebThreadIDs(ids...)
+}
+
 // AddUsageLogIDs adds the "usage_logs" edge to the UsageLog entity by IDs.
 func (_u *GroupUpdateOne) AddUsageLogIDs(ids ...int64) *GroupUpdateOne {
 	_u.mutation.AddUsageLogIDs(ids...)
@@ -2031,6 +2128,27 @@ func (_u *GroupUpdateOne) RemoveSubscriptions(v ...*UserSubscription) *GroupUpda
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveSubscriptionIDs(ids...)
+}
+
+// ClearOpenaiWebThreads clears all "openai_web_threads" edges to the OpenAIWebThread entity.
+func (_u *GroupUpdateOne) ClearOpenaiWebThreads() *GroupUpdateOne {
+	_u.mutation.ClearOpenaiWebThreads()
+	return _u
+}
+
+// RemoveOpenaiWebThreadIDs removes the "openai_web_threads" edge to OpenAIWebThread entities by IDs.
+func (_u *GroupUpdateOne) RemoveOpenaiWebThreadIDs(ids ...int64) *GroupUpdateOne {
+	_u.mutation.RemoveOpenaiWebThreadIDs(ids...)
+	return _u
+}
+
+// RemoveOpenaiWebThreads removes "openai_web_threads" edges to OpenAIWebThread entities.
+func (_u *GroupUpdateOne) RemoveOpenaiWebThreads(v ...*OpenAIWebThread) *GroupUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveOpenaiWebThreadIDs(ids...)
 }
 
 // ClearUsageLogs clears all "usage_logs" edges to the UsageLog entity.
@@ -2496,6 +2614,51 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(usersubscription.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.OpenaiWebThreadsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.OpenaiWebThreadsTable,
+			Columns: []string{group.OpenaiWebThreadsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(openaiwebthread.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedOpenaiWebThreadsIDs(); len(nodes) > 0 && !_u.mutation.OpenaiWebThreadsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.OpenaiWebThreadsTable,
+			Columns: []string{group.OpenaiWebThreadsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(openaiwebthread.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.OpenaiWebThreadsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.OpenaiWebThreadsTable,
+			Columns: []string{group.OpenaiWebThreadsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(openaiwebthread.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {

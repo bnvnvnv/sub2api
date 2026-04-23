@@ -17,6 +17,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/apikey"
 	"github.com/Wei-Shaw/sub2api/ent/authidentity"
 	"github.com/Wei-Shaw/sub2api/ent/group"
+	"github.com/Wei-Shaw/sub2api/ent/openaiwebthread"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
 	"github.com/Wei-Shaw/sub2api/ent/pendingauthsession"
 	"github.com/Wei-Shaw/sub2api/ent/predicate"
@@ -39,6 +40,7 @@ type UserQuery struct {
 	withAPIKeys               *APIKeyQuery
 	withRedeemCodes           *RedeemCodeQuery
 	withSubscriptions         *UserSubscriptionQuery
+	withOpenaiWebThreads      *OpenAIWebThreadQuery
 	withAssignedSubscriptions *UserSubscriptionQuery
 	withAnnouncementReads     *AnnouncementReadQuery
 	withAllowedGroups         *GroupQuery
@@ -145,6 +147,28 @@ func (_q *UserQuery) QuerySubscriptions() *UserSubscriptionQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(usersubscription.Table, usersubscription.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.SubscriptionsTable, user.SubscriptionsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryOpenaiWebThreads chains the current query on the "openai_web_threads" edge.
+func (_q *UserQuery) QueryOpenaiWebThreads() *OpenAIWebThreadQuery {
+	query := (&OpenAIWebThreadClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(openaiwebthread.Table, openaiwebthread.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.OpenaiWebThreadsTable, user.OpenaiWebThreadsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -567,6 +591,7 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withAPIKeys:               _q.withAPIKeys.Clone(),
 		withRedeemCodes:           _q.withRedeemCodes.Clone(),
 		withSubscriptions:         _q.withSubscriptions.Clone(),
+		withOpenaiWebThreads:      _q.withOpenaiWebThreads.Clone(),
 		withAssignedSubscriptions: _q.withAssignedSubscriptions.Clone(),
 		withAnnouncementReads:     _q.withAnnouncementReads.Clone(),
 		withAllowedGroups:         _q.withAllowedGroups.Clone(),
@@ -613,6 +638,17 @@ func (_q *UserQuery) WithSubscriptions(opts ...func(*UserSubscriptionQuery)) *Us
 		opt(query)
 	}
 	_q.withSubscriptions = query
+	return _q
+}
+
+// WithOpenaiWebThreads tells the query-builder to eager-load the nodes that are connected to
+// the "openai_web_threads" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithOpenaiWebThreads(opts ...func(*OpenAIWebThreadQuery)) *UserQuery {
+	query := (&OpenAIWebThreadClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withOpenaiWebThreads = query
 	return _q
 }
 
@@ -804,10 +840,11 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [13]bool{
+		loadedTypes = [14]bool{
 			_q.withAPIKeys != nil,
 			_q.withRedeemCodes != nil,
 			_q.withSubscriptions != nil,
+			_q.withOpenaiWebThreads != nil,
 			_q.withAssignedSubscriptions != nil,
 			_q.withAnnouncementReads != nil,
 			_q.withAllowedGroups != nil,
@@ -859,6 +896,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadSubscriptions(ctx, query, nodes,
 			func(n *User) { n.Edges.Subscriptions = []*UserSubscription{} },
 			func(n *User, e *UserSubscription) { n.Edges.Subscriptions = append(n.Edges.Subscriptions, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withOpenaiWebThreads; query != nil {
+		if err := _q.loadOpenaiWebThreads(ctx, query, nodes,
+			func(n *User) { n.Edges.OpenaiWebThreads = []*OpenAIWebThread{} },
+			func(n *User, e *OpenAIWebThread) { n.Edges.OpenaiWebThreads = append(n.Edges.OpenaiWebThreads, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -1017,6 +1061,36 @@ func (_q *UserQuery) loadSubscriptions(ctx context.Context, query *UserSubscript
 	}
 	query.Where(predicate.UserSubscription(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(user.SubscriptionsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.UserID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadOpenaiWebThreads(ctx context.Context, query *OpenAIWebThreadQuery, nodes []*User, init func(*User), assign func(*User, *OpenAIWebThread)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int64]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(openaiwebthread.FieldUserID)
+	}
+	query.Where(predicate.OpenAIWebThread(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.OpenaiWebThreadsColumn), fks...))
 	}))
 	neighbors, err := query.All(ctx)
 	if err != nil {

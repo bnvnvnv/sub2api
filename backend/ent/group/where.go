@@ -1389,6 +1389,29 @@ func HasSubscriptionsWith(preds ...predicate.UserSubscription) predicate.Group {
 	})
 }
 
+// HasOpenaiWebThreads applies the HasEdge predicate on the "openai_web_threads" edge.
+func HasOpenaiWebThreads() predicate.Group {
+	return predicate.Group(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, OpenaiWebThreadsTable, OpenaiWebThreadsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasOpenaiWebThreadsWith applies the HasEdge predicate on the "openai_web_threads" edge with a given conditions (other predicates).
+func HasOpenaiWebThreadsWith(preds ...predicate.OpenAIWebThread) predicate.Group {
+	return predicate.Group(func(s *sql.Selector) {
+		step := newOpenaiWebThreadsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasUsageLogs applies the HasEdge predicate on the "usage_logs" edge.
 func HasUsageLogs() predicate.Group {
 	return predicate.Group(func(s *sql.Selector) {

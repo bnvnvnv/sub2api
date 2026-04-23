@@ -1,6 +1,8 @@
 package service
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"testing"
 	"time"
@@ -55,6 +57,45 @@ func TestParseCPAImportCandidate_Codex(t *testing.T) {
 	require.Contains(t, candidate.matchKeys, "codex:openai@example.com:acct_123")
 	require.Contains(t, candidate.matchKeys, "codex:acct_123")
 	require.Contains(t, candidate.matchKeys, "codex:openai@example.com")
+}
+
+func TestParseCPAImportCandidate_CodexEnrichesFromIDToken(t *testing.T) {
+	idToken := buildTestOpenAIIDToken(t, map[string]any{
+		"email": "jwt@example.com",
+		"https://api.openai.com/auth": map[string]any{
+			"chatgpt_account_id": "acct_from_jwt",
+			"chatgpt_user_id":    "user_from_jwt",
+			"chatgpt_plan_type":  "plus",
+			"organizations": []map[string]any{
+				{
+					"id":         "org_default",
+					"is_default": true,
+				},
+			},
+		},
+	})
+
+	raw := fmt.Sprintf(`{
+		"type":"codex",
+		"access_token":"openai-access",
+		"refresh_token":"openai-refresh",
+		"id_token":"%s",
+		"expired":"2026-03-23T10:00:00Z",
+		"subscription_expires_at":"2026-05-01T00:00:00Z"
+	}`, idToken)
+
+	candidate, err := parseCPAImportCandidate("codex-auth.json", raw)
+	require.NoError(t, err)
+
+	require.Equal(t, PlatformOpenAI, candidate.platform)
+	require.Equal(t, AccountTypeOAuth, candidate.accountType)
+	require.Equal(t, "jwt@example.com", candidate.credentials["email"])
+	require.Equal(t, "acct_from_jwt", candidate.credentials["chatgpt_account_id"])
+	require.Equal(t, "user_from_jwt", candidate.credentials["chatgpt_user_id"])
+	require.Equal(t, "plus", candidate.credentials["plan_type"])
+	require.Equal(t, "org_default", candidate.credentials["organization_id"])
+	require.Equal(t, "2026-05-01T00:00:00Z", candidate.credentials["subscription_expires_at"])
+	require.Equal(t, "codex:jwt@example.com:acct_from_jwt", candidate.sourceKey)
 }
 
 func TestParseCPAImportCandidate_Gemini(t *testing.T) {
@@ -122,4 +163,22 @@ func TestFilterImportableCPARemoteFiles(t *testing.T) {
 	require.Equal(t, 1, stats.Importable)
 	require.Equal(t, 2, stats.SkippedNonNormal)
 	require.Equal(t, 1, stats.SkippedUnsupported)
+}
+
+func buildTestOpenAIIDToken(t *testing.T, payload map[string]any) string {
+	t.Helper()
+
+	headerBytes, err := json.Marshal(map[string]any{
+		"alg": "none",
+		"typ": "JWT",
+	})
+	require.NoError(t, err)
+
+	payloadBytes, err := json.Marshal(payload)
+	require.NoError(t, err)
+
+	return base64.RawURLEncoding.EncodeToString(headerBytes) +
+		"." +
+		base64.RawURLEncoding.EncodeToString(payloadBytes) +
+		".signature"
 }

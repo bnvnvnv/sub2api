@@ -1408,6 +1408,66 @@ export interface SubscriptionProgress {
   days_remaining: number | null
 }
 
+export interface OpenAIWebEntitlement {
+  group_id: number
+  group_name: string
+  group_desc: string
+  subscription_id: number
+  has_web_chat: boolean
+  has_pro_accounts: boolean
+  default_model: string
+  capability_mode: 'web_chat' | 'pro_model'
+  subscription_end: string
+}
+
+export interface OpenAIWebGroupSummary {
+  id: number
+  name: string
+  description: string
+  platform: string
+}
+
+export interface OpenAIWebAccountSummary {
+  id: number
+  name: string
+  platform: string
+  type: string
+  status: string
+  plan_type?: string
+}
+
+export interface OpenAIWebThread {
+  id: number
+  user_id: number
+  group_id: number
+  account_id: number
+  local_thread_id: string
+  page_session_id: string
+  upstream_conversation_id: string | null
+  upstream_session_id: string | null
+  provider: string
+  title: string
+  requested_model: string
+  capability_mode: 'web_chat' | 'pro_model'
+  history_mode: 'upstream_only' | 'hybrid' | 'server_mirror'
+  cache_policy: 'local_only' | 'local_encrypted'
+  sync_status: 'pending' | 'ready' | 'error'
+  status: 'active' | 'archived' | 'broken'
+  last_synced_at: string | null
+  last_error: string
+  created_at: string
+  updated_at: string
+  group?: OpenAIWebGroupSummary
+  account?: OpenAIWebAccountSummary
+}
+
+export interface OpenAIWebThreadCreateRequest {
+  group_id: number
+  requested_model?: string
+  title?: string
+  cache_policy?: 'local_only' | 'local_encrypted'
+}
+
 export interface AssignSubscriptionRequest {
   user_id: number
   group_id: number

@@ -42,6 +42,7 @@ type Handlers struct {
 	Usage          *UsageHandler
 	Redeem         *RedeemHandler
 	Subscription   *SubscriptionHandler
+	OpenAIWeb      *OpenAIWebThreadHandler
 	Announcement   *AnnouncementHandler
 	Admin          *AdminHandlers
 	Gateway        *GatewayHandler

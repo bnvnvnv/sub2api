@@ -103,5 +103,14 @@ func RegisterUserRoutes(
 			subscriptions.GET("/progress", h.Subscription.GetProgress)
 			subscriptions.GET("/summary", h.Subscription.GetSummary)
 		}
+
+		openAIWeb := authenticated.Group("/openai-web")
+		{
+			openAIWeb.GET("/entitlements", h.OpenAIWeb.ListEntitlements)
+			openAIWeb.GET("/threads", h.OpenAIWeb.ListThreads)
+			openAIWeb.POST("/threads", h.OpenAIWeb.CreateThread)
+			openAIWeb.GET("/threads/:id", h.OpenAIWeb.GetThread)
+			openAIWeb.POST("/threads/:id/archive", h.OpenAIWeb.ArchiveThread)
+		}
 	}
 }

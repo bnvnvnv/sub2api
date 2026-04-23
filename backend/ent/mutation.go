@@ -23,6 +23,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/idempotencyrecord"
 	"github.com/Wei-Shaw/sub2api/ent/identityadoptiondecision"
+	"github.com/Wei-Shaw/sub2api/ent/openaiwebthread"
 	"github.com/Wei-Shaw/sub2api/ent/paymentauditlog"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
 	"github.com/Wei-Shaw/sub2api/ent/paymentproviderinstance"
@@ -66,6 +67,7 @@ const (
 	TypeGroup                    = "Group"
 	TypeIdempotencyRecord        = "IdempotencyRecord"
 	TypeIdentityAdoptionDecision = "IdentityAdoptionDecision"
+	TypeOpenAIWebThread          = "OpenAIWebThread"
 	TypePaymentAuditLog          = "PaymentAuditLog"
 	TypePaymentOrder             = "PaymentOrder"
 	TypePaymentProviderInstance  = "PaymentProviderInstance"
@@ -2307,6 +2309,9 @@ type AccountMutation struct {
 	usage_logs                map[int64]struct{}
 	removedusage_logs         map[int64]struct{}
 	clearedusage_logs         bool
+	openai_web_threads        map[int64]struct{}
+	removedopenai_web_threads map[int64]struct{}
+	clearedopenai_web_threads bool
 	done                      bool
 	oldValue                  func(context.Context) (*Account, error)
 	predicates                []predicate.Account
@@ -3829,6 +3834,60 @@ func (m *AccountMutation) ResetUsageLogs() {
 	m.removedusage_logs = nil
 }
 
+// AddOpenaiWebThreadIDs adds the "openai_web_threads" edge to the OpenAIWebThread entity by ids.
+func (m *AccountMutation) AddOpenaiWebThreadIDs(ids ...int64) {
+	if m.openai_web_threads == nil {
+		m.openai_web_threads = make(map[int64]struct{})
+	}
+	for i := range ids {
+		m.openai_web_threads[ids[i]] = struct{}{}
+	}
+}
+
+// ClearOpenaiWebThreads clears the "openai_web_threads" edge to the OpenAIWebThread entity.
+func (m *AccountMutation) ClearOpenaiWebThreads() {
+	m.clearedopenai_web_threads = true
+}
+
+// OpenaiWebThreadsCleared reports if the "openai_web_threads" edge to the OpenAIWebThread entity was cleared.
+func (m *AccountMutation) OpenaiWebThreadsCleared() bool {
+	return m.clearedopenai_web_threads
+}
+
+// RemoveOpenaiWebThreadIDs removes the "openai_web_threads" edge to the OpenAIWebThread entity by IDs.
+func (m *AccountMutation) RemoveOpenaiWebThreadIDs(ids ...int64) {
+	if m.removedopenai_web_threads == nil {
+		m.removedopenai_web_threads = make(map[int64]struct{})
+	}
+	for i := range ids {
+		delete(m.openai_web_threads, ids[i])
+		m.removedopenai_web_threads[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedOpenaiWebThreads returns the removed IDs of the "openai_web_threads" edge to the OpenAIWebThread entity.
+func (m *AccountMutation) RemovedOpenaiWebThreadsIDs() (ids []int64) {
+	for id := range m.removedopenai_web_threads {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// OpenaiWebThreadsIDs returns the "openai_web_threads" edge IDs in the mutation.
+func (m *AccountMutation) OpenaiWebThreadsIDs() (ids []int64) {
+	for id := range m.openai_web_threads {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetOpenaiWebThreads resets all changes to the "openai_web_threads" edge.
+func (m *AccountMutation) ResetOpenaiWebThreads() {
+	m.openai_web_threads = nil
+	m.clearedopenai_web_threads = false
+	m.removedopenai_web_threads = nil
+}
+
 // Where appends a list predicates to the AccountMutation builder.
 func (m *AccountMutation) Where(ps ...predicate.Account) {
 	m.predicates = append(m.predicates, ps...)
@@ -4565,7 +4624,7 @@ func (m *AccountMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *AccountMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.groups != nil {
 		edges = append(edges, account.EdgeGroups)
 	}
@@ -4574,6 +4633,9 @@ func (m *AccountMutation) AddedEdges() []string {
 	}
 	if m.usage_logs != nil {
 		edges = append(edges, account.EdgeUsageLogs)
+	}
+	if m.openai_web_threads != nil {
+		edges = append(edges, account.EdgeOpenaiWebThreads)
 	}
 	return edges
 }
@@ -4598,18 +4660,27 @@ func (m *AccountMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case account.EdgeOpenaiWebThreads:
+		ids := make([]ent.Value, 0, len(m.openai_web_threads))
+		for id := range m.openai_web_threads {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *AccountMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.removedgroups != nil {
 		edges = append(edges, account.EdgeGroups)
 	}
 	if m.removedusage_logs != nil {
 		edges = append(edges, account.EdgeUsageLogs)
+	}
+	if m.removedopenai_web_threads != nil {
+		edges = append(edges, account.EdgeOpenaiWebThreads)
 	}
 	return edges
 }
@@ -4630,13 +4701,19 @@ func (m *AccountMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case account.EdgeOpenaiWebThreads:
+		ids := make([]ent.Value, 0, len(m.removedopenai_web_threads))
+		for id := range m.removedopenai_web_threads {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *AccountMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.clearedgroups {
 		edges = append(edges, account.EdgeGroups)
 	}
@@ -4645,6 +4722,9 @@ func (m *AccountMutation) ClearedEdges() []string {
 	}
 	if m.clearedusage_logs {
 		edges = append(edges, account.EdgeUsageLogs)
+	}
+	if m.clearedopenai_web_threads {
+		edges = append(edges, account.EdgeOpenaiWebThreads)
 	}
 	return edges
 }
@@ -4659,6 +4739,8 @@ func (m *AccountMutation) EdgeCleared(name string) bool {
 		return m.clearedproxy
 	case account.EdgeUsageLogs:
 		return m.clearedusage_logs
+	case account.EdgeOpenaiWebThreads:
+		return m.clearedopenai_web_threads
 	}
 	return false
 }
@@ -4686,6 +4768,9 @@ func (m *AccountMutation) ResetEdge(name string) error {
 		return nil
 	case account.EdgeUsageLogs:
 		m.ResetUsageLogs()
+		return nil
+	case account.EdgeOpenaiWebThreads:
+		m.ResetOpenaiWebThreads()
 		return nil
 	}
 	return fmt.Errorf("unknown Account edge %s", name)
@@ -10112,6 +10197,9 @@ type GroupMutation struct {
 	subscriptions                           map[int64]struct{}
 	removedsubscriptions                    map[int64]struct{}
 	clearedsubscriptions                    bool
+	openai_web_threads                      map[int64]struct{}
+	removedopenai_web_threads               map[int64]struct{}
+	clearedopenai_web_threads               bool
 	usage_logs                              map[int64]struct{}
 	removedusage_logs                       map[int64]struct{}
 	clearedusage_logs                       bool
@@ -11852,6 +11940,60 @@ func (m *GroupMutation) ResetSubscriptions() {
 	m.removedsubscriptions = nil
 }
 
+// AddOpenaiWebThreadIDs adds the "openai_web_threads" edge to the OpenAIWebThread entity by ids.
+func (m *GroupMutation) AddOpenaiWebThreadIDs(ids ...int64) {
+	if m.openai_web_threads == nil {
+		m.openai_web_threads = make(map[int64]struct{})
+	}
+	for i := range ids {
+		m.openai_web_threads[ids[i]] = struct{}{}
+	}
+}
+
+// ClearOpenaiWebThreads clears the "openai_web_threads" edge to the OpenAIWebThread entity.
+func (m *GroupMutation) ClearOpenaiWebThreads() {
+	m.clearedopenai_web_threads = true
+}
+
+// OpenaiWebThreadsCleared reports if the "openai_web_threads" edge to the OpenAIWebThread entity was cleared.
+func (m *GroupMutation) OpenaiWebThreadsCleared() bool {
+	return m.clearedopenai_web_threads
+}
+
+// RemoveOpenaiWebThreadIDs removes the "openai_web_threads" edge to the OpenAIWebThread entity by IDs.
+func (m *GroupMutation) RemoveOpenaiWebThreadIDs(ids ...int64) {
+	if m.removedopenai_web_threads == nil {
+		m.removedopenai_web_threads = make(map[int64]struct{})
+	}
+	for i := range ids {
+		delete(m.openai_web_threads, ids[i])
+		m.removedopenai_web_threads[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedOpenaiWebThreads returns the removed IDs of the "openai_web_threads" edge to the OpenAIWebThread entity.
+func (m *GroupMutation) RemovedOpenaiWebThreadsIDs() (ids []int64) {
+	for id := range m.removedopenai_web_threads {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// OpenaiWebThreadsIDs returns the "openai_web_threads" edge IDs in the mutation.
+func (m *GroupMutation) OpenaiWebThreadsIDs() (ids []int64) {
+	for id := range m.openai_web_threads {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetOpenaiWebThreads resets all changes to the "openai_web_threads" edge.
+func (m *GroupMutation) ResetOpenaiWebThreads() {
+	m.openai_web_threads = nil
+	m.clearedopenai_web_threads = false
+	m.removedopenai_web_threads = nil
+}
+
 // AddUsageLogIDs adds the "usage_logs" edge to the UsageLog entity by ids.
 func (m *GroupMutation) AddUsageLogIDs(ids ...int64) {
 	if m.usage_logs == nil {
@@ -12844,7 +12986,7 @@ func (m *GroupMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *GroupMutation) AddedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 7)
 	if m.api_keys != nil {
 		edges = append(edges, group.EdgeAPIKeys)
 	}
@@ -12853,6 +12995,9 @@ func (m *GroupMutation) AddedEdges() []string {
 	}
 	if m.subscriptions != nil {
 		edges = append(edges, group.EdgeSubscriptions)
+	}
+	if m.openai_web_threads != nil {
+		edges = append(edges, group.EdgeOpenaiWebThreads)
 	}
 	if m.usage_logs != nil {
 		edges = append(edges, group.EdgeUsageLogs)
@@ -12888,6 +13033,12 @@ func (m *GroupMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case group.EdgeOpenaiWebThreads:
+		ids := make([]ent.Value, 0, len(m.openai_web_threads))
+		for id := range m.openai_web_threads {
+			ids = append(ids, id)
+		}
+		return ids
 	case group.EdgeUsageLogs:
 		ids := make([]ent.Value, 0, len(m.usage_logs))
 		for id := range m.usage_logs {
@@ -12912,7 +13063,7 @@ func (m *GroupMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *GroupMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 7)
 	if m.removedapi_keys != nil {
 		edges = append(edges, group.EdgeAPIKeys)
 	}
@@ -12921,6 +13072,9 @@ func (m *GroupMutation) RemovedEdges() []string {
 	}
 	if m.removedsubscriptions != nil {
 		edges = append(edges, group.EdgeSubscriptions)
+	}
+	if m.removedopenai_web_threads != nil {
+		edges = append(edges, group.EdgeOpenaiWebThreads)
 	}
 	if m.removedusage_logs != nil {
 		edges = append(edges, group.EdgeUsageLogs)
@@ -12956,6 +13110,12 @@ func (m *GroupMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case group.EdgeOpenaiWebThreads:
+		ids := make([]ent.Value, 0, len(m.removedopenai_web_threads))
+		for id := range m.removedopenai_web_threads {
+			ids = append(ids, id)
+		}
+		return ids
 	case group.EdgeUsageLogs:
 		ids := make([]ent.Value, 0, len(m.removedusage_logs))
 		for id := range m.removedusage_logs {
@@ -12980,7 +13140,7 @@ func (m *GroupMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *GroupMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 7)
 	if m.clearedapi_keys {
 		edges = append(edges, group.EdgeAPIKeys)
 	}
@@ -12989,6 +13149,9 @@ func (m *GroupMutation) ClearedEdges() []string {
 	}
 	if m.clearedsubscriptions {
 		edges = append(edges, group.EdgeSubscriptions)
+	}
+	if m.clearedopenai_web_threads {
+		edges = append(edges, group.EdgeOpenaiWebThreads)
 	}
 	if m.clearedusage_logs {
 		edges = append(edges, group.EdgeUsageLogs)
@@ -13012,6 +13175,8 @@ func (m *GroupMutation) EdgeCleared(name string) bool {
 		return m.clearedredeem_codes
 	case group.EdgeSubscriptions:
 		return m.clearedsubscriptions
+	case group.EdgeOpenaiWebThreads:
+		return m.clearedopenai_web_threads
 	case group.EdgeUsageLogs:
 		return m.clearedusage_logs
 	case group.EdgeAccounts:
@@ -13042,6 +13207,9 @@ func (m *GroupMutation) ResetEdge(name string) error {
 		return nil
 	case group.EdgeSubscriptions:
 		m.ResetSubscriptions()
+		return nil
+	case group.EdgeOpenaiWebThreads:
+		m.ResetOpenaiWebThreads()
 		return nil
 	case group.EdgeUsageLogs:
 		m.ResetUsageLogs()
@@ -14811,6 +14979,1586 @@ func (m *IdentityAdoptionDecisionMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown IdentityAdoptionDecision edge %s", name)
+}
+
+// OpenAIWebThreadMutation represents an operation that mutates the OpenAIWebThread nodes in the graph.
+type OpenAIWebThreadMutation struct {
+	config
+	op                       Op
+	typ                      string
+	id                       *int64
+	local_thread_id          *string
+	page_session_id          *string
+	upstream_conversation_id *string
+	upstream_session_id      *string
+	provider                 *string
+	title                    *string
+	requested_model          *string
+	capability_mode          *string
+	history_mode             *string
+	cache_policy             *string
+	sync_status              *string
+	status                   *string
+	last_synced_at           *time.Time
+	last_error               *string
+	created_at               *time.Time
+	updated_at               *time.Time
+	deleted_at               *time.Time
+	clearedFields            map[string]struct{}
+	user                     *int64
+	cleareduser              bool
+	group                    *int64
+	clearedgroup             bool
+	account                  *int64
+	clearedaccount           bool
+	done                     bool
+	oldValue                 func(context.Context) (*OpenAIWebThread, error)
+	predicates               []predicate.OpenAIWebThread
+}
+
+var _ ent.Mutation = (*OpenAIWebThreadMutation)(nil)
+
+// openaiwebthreadOption allows management of the mutation configuration using functional options.
+type openaiwebthreadOption func(*OpenAIWebThreadMutation)
+
+// newOpenAIWebThreadMutation creates new mutation for the OpenAIWebThread entity.
+func newOpenAIWebThreadMutation(c config, op Op, opts ...openaiwebthreadOption) *OpenAIWebThreadMutation {
+	m := &OpenAIWebThreadMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeOpenAIWebThread,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withOpenAIWebThreadID sets the ID field of the mutation.
+func withOpenAIWebThreadID(id int64) openaiwebthreadOption {
+	return func(m *OpenAIWebThreadMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *OpenAIWebThread
+		)
+		m.oldValue = func(ctx context.Context) (*OpenAIWebThread, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().OpenAIWebThread.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withOpenAIWebThread sets the old OpenAIWebThread of the mutation.
+func withOpenAIWebThread(node *OpenAIWebThread) openaiwebthreadOption {
+	return func(m *OpenAIWebThreadMutation) {
+		m.oldValue = func(context.Context) (*OpenAIWebThread, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m OpenAIWebThreadMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m OpenAIWebThreadMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *OpenAIWebThreadMutation) ID() (id int64, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *OpenAIWebThreadMutation) IDs(ctx context.Context) ([]int64, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int64{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().OpenAIWebThread.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetUserID sets the "user_id" field.
+func (m *OpenAIWebThreadMutation) SetUserID(i int64) {
+	m.user = &i
+}
+
+// UserID returns the value of the "user_id" field in the mutation.
+func (m *OpenAIWebThreadMutation) UserID() (r int64, exists bool) {
+	v := m.user
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUserID returns the old "user_id" field's value of the OpenAIWebThread entity.
+// If the OpenAIWebThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIWebThreadMutation) OldUserID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
+	}
+	return oldValue.UserID, nil
+}
+
+// ResetUserID resets all changes to the "user_id" field.
+func (m *OpenAIWebThreadMutation) ResetUserID() {
+	m.user = nil
+}
+
+// SetGroupID sets the "group_id" field.
+func (m *OpenAIWebThreadMutation) SetGroupID(i int64) {
+	m.group = &i
+}
+
+// GroupID returns the value of the "group_id" field in the mutation.
+func (m *OpenAIWebThreadMutation) GroupID() (r int64, exists bool) {
+	v := m.group
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGroupID returns the old "group_id" field's value of the OpenAIWebThread entity.
+// If the OpenAIWebThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIWebThreadMutation) OldGroupID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGroupID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGroupID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGroupID: %w", err)
+	}
+	return oldValue.GroupID, nil
+}
+
+// ResetGroupID resets all changes to the "group_id" field.
+func (m *OpenAIWebThreadMutation) ResetGroupID() {
+	m.group = nil
+}
+
+// SetAccountID sets the "account_id" field.
+func (m *OpenAIWebThreadMutation) SetAccountID(i int64) {
+	m.account = &i
+}
+
+// AccountID returns the value of the "account_id" field in the mutation.
+func (m *OpenAIWebThreadMutation) AccountID() (r int64, exists bool) {
+	v := m.account
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAccountID returns the old "account_id" field's value of the OpenAIWebThread entity.
+// If the OpenAIWebThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIWebThreadMutation) OldAccountID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAccountID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAccountID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAccountID: %w", err)
+	}
+	return oldValue.AccountID, nil
+}
+
+// ResetAccountID resets all changes to the "account_id" field.
+func (m *OpenAIWebThreadMutation) ResetAccountID() {
+	m.account = nil
+}
+
+// SetLocalThreadID sets the "local_thread_id" field.
+func (m *OpenAIWebThreadMutation) SetLocalThreadID(s string) {
+	m.local_thread_id = &s
+}
+
+// LocalThreadID returns the value of the "local_thread_id" field in the mutation.
+func (m *OpenAIWebThreadMutation) LocalThreadID() (r string, exists bool) {
+	v := m.local_thread_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLocalThreadID returns the old "local_thread_id" field's value of the OpenAIWebThread entity.
+// If the OpenAIWebThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIWebThreadMutation) OldLocalThreadID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLocalThreadID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLocalThreadID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLocalThreadID: %w", err)
+	}
+	return oldValue.LocalThreadID, nil
+}
+
+// ResetLocalThreadID resets all changes to the "local_thread_id" field.
+func (m *OpenAIWebThreadMutation) ResetLocalThreadID() {
+	m.local_thread_id = nil
+}
+
+// SetPageSessionID sets the "page_session_id" field.
+func (m *OpenAIWebThreadMutation) SetPageSessionID(s string) {
+	m.page_session_id = &s
+}
+
+// PageSessionID returns the value of the "page_session_id" field in the mutation.
+func (m *OpenAIWebThreadMutation) PageSessionID() (r string, exists bool) {
+	v := m.page_session_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPageSessionID returns the old "page_session_id" field's value of the OpenAIWebThread entity.
+// If the OpenAIWebThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIWebThreadMutation) OldPageSessionID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPageSessionID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPageSessionID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPageSessionID: %w", err)
+	}
+	return oldValue.PageSessionID, nil
+}
+
+// ResetPageSessionID resets all changes to the "page_session_id" field.
+func (m *OpenAIWebThreadMutation) ResetPageSessionID() {
+	m.page_session_id = nil
+}
+
+// SetUpstreamConversationID sets the "upstream_conversation_id" field.
+func (m *OpenAIWebThreadMutation) SetUpstreamConversationID(s string) {
+	m.upstream_conversation_id = &s
+}
+
+// UpstreamConversationID returns the value of the "upstream_conversation_id" field in the mutation.
+func (m *OpenAIWebThreadMutation) UpstreamConversationID() (r string, exists bool) {
+	v := m.upstream_conversation_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpstreamConversationID returns the old "upstream_conversation_id" field's value of the OpenAIWebThread entity.
+// If the OpenAIWebThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIWebThreadMutation) OldUpstreamConversationID(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpstreamConversationID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpstreamConversationID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpstreamConversationID: %w", err)
+	}
+	return oldValue.UpstreamConversationID, nil
+}
+
+// ClearUpstreamConversationID clears the value of the "upstream_conversation_id" field.
+func (m *OpenAIWebThreadMutation) ClearUpstreamConversationID() {
+	m.upstream_conversation_id = nil
+	m.clearedFields[openaiwebthread.FieldUpstreamConversationID] = struct{}{}
+}
+
+// UpstreamConversationIDCleared returns if the "upstream_conversation_id" field was cleared in this mutation.
+func (m *OpenAIWebThreadMutation) UpstreamConversationIDCleared() bool {
+	_, ok := m.clearedFields[openaiwebthread.FieldUpstreamConversationID]
+	return ok
+}
+
+// ResetUpstreamConversationID resets all changes to the "upstream_conversation_id" field.
+func (m *OpenAIWebThreadMutation) ResetUpstreamConversationID() {
+	m.upstream_conversation_id = nil
+	delete(m.clearedFields, openaiwebthread.FieldUpstreamConversationID)
+}
+
+// SetUpstreamSessionID sets the "upstream_session_id" field.
+func (m *OpenAIWebThreadMutation) SetUpstreamSessionID(s string) {
+	m.upstream_session_id = &s
+}
+
+// UpstreamSessionID returns the value of the "upstream_session_id" field in the mutation.
+func (m *OpenAIWebThreadMutation) UpstreamSessionID() (r string, exists bool) {
+	v := m.upstream_session_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpstreamSessionID returns the old "upstream_session_id" field's value of the OpenAIWebThread entity.
+// If the OpenAIWebThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIWebThreadMutation) OldUpstreamSessionID(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpstreamSessionID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpstreamSessionID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpstreamSessionID: %w", err)
+	}
+	return oldValue.UpstreamSessionID, nil
+}
+
+// ClearUpstreamSessionID clears the value of the "upstream_session_id" field.
+func (m *OpenAIWebThreadMutation) ClearUpstreamSessionID() {
+	m.upstream_session_id = nil
+	m.clearedFields[openaiwebthread.FieldUpstreamSessionID] = struct{}{}
+}
+
+// UpstreamSessionIDCleared returns if the "upstream_session_id" field was cleared in this mutation.
+func (m *OpenAIWebThreadMutation) UpstreamSessionIDCleared() bool {
+	_, ok := m.clearedFields[openaiwebthread.FieldUpstreamSessionID]
+	return ok
+}
+
+// ResetUpstreamSessionID resets all changes to the "upstream_session_id" field.
+func (m *OpenAIWebThreadMutation) ResetUpstreamSessionID() {
+	m.upstream_session_id = nil
+	delete(m.clearedFields, openaiwebthread.FieldUpstreamSessionID)
+}
+
+// SetProvider sets the "provider" field.
+func (m *OpenAIWebThreadMutation) SetProvider(s string) {
+	m.provider = &s
+}
+
+// Provider returns the value of the "provider" field in the mutation.
+func (m *OpenAIWebThreadMutation) Provider() (r string, exists bool) {
+	v := m.provider
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProvider returns the old "provider" field's value of the OpenAIWebThread entity.
+// If the OpenAIWebThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIWebThreadMutation) OldProvider(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProvider is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProvider requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProvider: %w", err)
+	}
+	return oldValue.Provider, nil
+}
+
+// ResetProvider resets all changes to the "provider" field.
+func (m *OpenAIWebThreadMutation) ResetProvider() {
+	m.provider = nil
+}
+
+// SetTitle sets the "title" field.
+func (m *OpenAIWebThreadMutation) SetTitle(s string) {
+	m.title = &s
+}
+
+// Title returns the value of the "title" field in the mutation.
+func (m *OpenAIWebThreadMutation) Title() (r string, exists bool) {
+	v := m.title
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTitle returns the old "title" field's value of the OpenAIWebThread entity.
+// If the OpenAIWebThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIWebThreadMutation) OldTitle(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTitle is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTitle requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTitle: %w", err)
+	}
+	return oldValue.Title, nil
+}
+
+// ResetTitle resets all changes to the "title" field.
+func (m *OpenAIWebThreadMutation) ResetTitle() {
+	m.title = nil
+}
+
+// SetRequestedModel sets the "requested_model" field.
+func (m *OpenAIWebThreadMutation) SetRequestedModel(s string) {
+	m.requested_model = &s
+}
+
+// RequestedModel returns the value of the "requested_model" field in the mutation.
+func (m *OpenAIWebThreadMutation) RequestedModel() (r string, exists bool) {
+	v := m.requested_model
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRequestedModel returns the old "requested_model" field's value of the OpenAIWebThread entity.
+// If the OpenAIWebThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIWebThreadMutation) OldRequestedModel(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRequestedModel is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRequestedModel requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRequestedModel: %w", err)
+	}
+	return oldValue.RequestedModel, nil
+}
+
+// ResetRequestedModel resets all changes to the "requested_model" field.
+func (m *OpenAIWebThreadMutation) ResetRequestedModel() {
+	m.requested_model = nil
+}
+
+// SetCapabilityMode sets the "capability_mode" field.
+func (m *OpenAIWebThreadMutation) SetCapabilityMode(s string) {
+	m.capability_mode = &s
+}
+
+// CapabilityMode returns the value of the "capability_mode" field in the mutation.
+func (m *OpenAIWebThreadMutation) CapabilityMode() (r string, exists bool) {
+	v := m.capability_mode
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCapabilityMode returns the old "capability_mode" field's value of the OpenAIWebThread entity.
+// If the OpenAIWebThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIWebThreadMutation) OldCapabilityMode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCapabilityMode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCapabilityMode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCapabilityMode: %w", err)
+	}
+	return oldValue.CapabilityMode, nil
+}
+
+// ResetCapabilityMode resets all changes to the "capability_mode" field.
+func (m *OpenAIWebThreadMutation) ResetCapabilityMode() {
+	m.capability_mode = nil
+}
+
+// SetHistoryMode sets the "history_mode" field.
+func (m *OpenAIWebThreadMutation) SetHistoryMode(s string) {
+	m.history_mode = &s
+}
+
+// HistoryMode returns the value of the "history_mode" field in the mutation.
+func (m *OpenAIWebThreadMutation) HistoryMode() (r string, exists bool) {
+	v := m.history_mode
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldHistoryMode returns the old "history_mode" field's value of the OpenAIWebThread entity.
+// If the OpenAIWebThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIWebThreadMutation) OldHistoryMode(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldHistoryMode is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldHistoryMode requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldHistoryMode: %w", err)
+	}
+	return oldValue.HistoryMode, nil
+}
+
+// ResetHistoryMode resets all changes to the "history_mode" field.
+func (m *OpenAIWebThreadMutation) ResetHistoryMode() {
+	m.history_mode = nil
+}
+
+// SetCachePolicy sets the "cache_policy" field.
+func (m *OpenAIWebThreadMutation) SetCachePolicy(s string) {
+	m.cache_policy = &s
+}
+
+// CachePolicy returns the value of the "cache_policy" field in the mutation.
+func (m *OpenAIWebThreadMutation) CachePolicy() (r string, exists bool) {
+	v := m.cache_policy
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCachePolicy returns the old "cache_policy" field's value of the OpenAIWebThread entity.
+// If the OpenAIWebThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIWebThreadMutation) OldCachePolicy(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCachePolicy is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCachePolicy requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCachePolicy: %w", err)
+	}
+	return oldValue.CachePolicy, nil
+}
+
+// ResetCachePolicy resets all changes to the "cache_policy" field.
+func (m *OpenAIWebThreadMutation) ResetCachePolicy() {
+	m.cache_policy = nil
+}
+
+// SetSyncStatus sets the "sync_status" field.
+func (m *OpenAIWebThreadMutation) SetSyncStatus(s string) {
+	m.sync_status = &s
+}
+
+// SyncStatus returns the value of the "sync_status" field in the mutation.
+func (m *OpenAIWebThreadMutation) SyncStatus() (r string, exists bool) {
+	v := m.sync_status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSyncStatus returns the old "sync_status" field's value of the OpenAIWebThread entity.
+// If the OpenAIWebThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIWebThreadMutation) OldSyncStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSyncStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSyncStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSyncStatus: %w", err)
+	}
+	return oldValue.SyncStatus, nil
+}
+
+// ResetSyncStatus resets all changes to the "sync_status" field.
+func (m *OpenAIWebThreadMutation) ResetSyncStatus() {
+	m.sync_status = nil
+}
+
+// SetStatus sets the "status" field.
+func (m *OpenAIWebThreadMutation) SetStatus(s string) {
+	m.status = &s
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *OpenAIWebThreadMutation) Status() (r string, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the OpenAIWebThread entity.
+// If the OpenAIWebThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIWebThreadMutation) OldStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *OpenAIWebThreadMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetLastSyncedAt sets the "last_synced_at" field.
+func (m *OpenAIWebThreadMutation) SetLastSyncedAt(t time.Time) {
+	m.last_synced_at = &t
+}
+
+// LastSyncedAt returns the value of the "last_synced_at" field in the mutation.
+func (m *OpenAIWebThreadMutation) LastSyncedAt() (r time.Time, exists bool) {
+	v := m.last_synced_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastSyncedAt returns the old "last_synced_at" field's value of the OpenAIWebThread entity.
+// If the OpenAIWebThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIWebThreadMutation) OldLastSyncedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastSyncedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastSyncedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastSyncedAt: %w", err)
+	}
+	return oldValue.LastSyncedAt, nil
+}
+
+// ClearLastSyncedAt clears the value of the "last_synced_at" field.
+func (m *OpenAIWebThreadMutation) ClearLastSyncedAt() {
+	m.last_synced_at = nil
+	m.clearedFields[openaiwebthread.FieldLastSyncedAt] = struct{}{}
+}
+
+// LastSyncedAtCleared returns if the "last_synced_at" field was cleared in this mutation.
+func (m *OpenAIWebThreadMutation) LastSyncedAtCleared() bool {
+	_, ok := m.clearedFields[openaiwebthread.FieldLastSyncedAt]
+	return ok
+}
+
+// ResetLastSyncedAt resets all changes to the "last_synced_at" field.
+func (m *OpenAIWebThreadMutation) ResetLastSyncedAt() {
+	m.last_synced_at = nil
+	delete(m.clearedFields, openaiwebthread.FieldLastSyncedAt)
+}
+
+// SetLastError sets the "last_error" field.
+func (m *OpenAIWebThreadMutation) SetLastError(s string) {
+	m.last_error = &s
+}
+
+// LastError returns the value of the "last_error" field in the mutation.
+func (m *OpenAIWebThreadMutation) LastError() (r string, exists bool) {
+	v := m.last_error
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastError returns the old "last_error" field's value of the OpenAIWebThread entity.
+// If the OpenAIWebThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIWebThreadMutation) OldLastError(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastError is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastError requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastError: %w", err)
+	}
+	return oldValue.LastError, nil
+}
+
+// ResetLastError resets all changes to the "last_error" field.
+func (m *OpenAIWebThreadMutation) ResetLastError() {
+	m.last_error = nil
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *OpenAIWebThreadMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *OpenAIWebThreadMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the OpenAIWebThread entity.
+// If the OpenAIWebThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIWebThreadMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *OpenAIWebThreadMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *OpenAIWebThreadMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *OpenAIWebThreadMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the OpenAIWebThread entity.
+// If the OpenAIWebThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIWebThreadMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *OpenAIWebThreadMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetDeletedAt sets the "deleted_at" field.
+func (m *OpenAIWebThreadMutation) SetDeletedAt(t time.Time) {
+	m.deleted_at = &t
+}
+
+// DeletedAt returns the value of the "deleted_at" field in the mutation.
+func (m *OpenAIWebThreadMutation) DeletedAt() (r time.Time, exists bool) {
+	v := m.deleted_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDeletedAt returns the old "deleted_at" field's value of the OpenAIWebThread entity.
+// If the OpenAIWebThread object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *OpenAIWebThreadMutation) OldDeletedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDeletedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDeletedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDeletedAt: %w", err)
+	}
+	return oldValue.DeletedAt, nil
+}
+
+// ClearDeletedAt clears the value of the "deleted_at" field.
+func (m *OpenAIWebThreadMutation) ClearDeletedAt() {
+	m.deleted_at = nil
+	m.clearedFields[openaiwebthread.FieldDeletedAt] = struct{}{}
+}
+
+// DeletedAtCleared returns if the "deleted_at" field was cleared in this mutation.
+func (m *OpenAIWebThreadMutation) DeletedAtCleared() bool {
+	_, ok := m.clearedFields[openaiwebthread.FieldDeletedAt]
+	return ok
+}
+
+// ResetDeletedAt resets all changes to the "deleted_at" field.
+func (m *OpenAIWebThreadMutation) ResetDeletedAt() {
+	m.deleted_at = nil
+	delete(m.clearedFields, openaiwebthread.FieldDeletedAt)
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *OpenAIWebThreadMutation) ClearUser() {
+	m.cleareduser = true
+	m.clearedFields[openaiwebthread.FieldUserID] = struct{}{}
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *OpenAIWebThreadMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *OpenAIWebThreadMutation) UserIDs() (ids []int64) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *OpenAIWebThreadMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// ClearGroup clears the "group" edge to the Group entity.
+func (m *OpenAIWebThreadMutation) ClearGroup() {
+	m.clearedgroup = true
+	m.clearedFields[openaiwebthread.FieldGroupID] = struct{}{}
+}
+
+// GroupCleared reports if the "group" edge to the Group entity was cleared.
+func (m *OpenAIWebThreadMutation) GroupCleared() bool {
+	return m.clearedgroup
+}
+
+// GroupIDs returns the "group" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// GroupID instead. It exists only for internal usage by the builders.
+func (m *OpenAIWebThreadMutation) GroupIDs() (ids []int64) {
+	if id := m.group; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetGroup resets all changes to the "group" edge.
+func (m *OpenAIWebThreadMutation) ResetGroup() {
+	m.group = nil
+	m.clearedgroup = false
+}
+
+// ClearAccount clears the "account" edge to the Account entity.
+func (m *OpenAIWebThreadMutation) ClearAccount() {
+	m.clearedaccount = true
+	m.clearedFields[openaiwebthread.FieldAccountID] = struct{}{}
+}
+
+// AccountCleared reports if the "account" edge to the Account entity was cleared.
+func (m *OpenAIWebThreadMutation) AccountCleared() bool {
+	return m.clearedaccount
+}
+
+// AccountIDs returns the "account" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// AccountID instead. It exists only for internal usage by the builders.
+func (m *OpenAIWebThreadMutation) AccountIDs() (ids []int64) {
+	if id := m.account; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetAccount resets all changes to the "account" edge.
+func (m *OpenAIWebThreadMutation) ResetAccount() {
+	m.account = nil
+	m.clearedaccount = false
+}
+
+// Where appends a list predicates to the OpenAIWebThreadMutation builder.
+func (m *OpenAIWebThreadMutation) Where(ps ...predicate.OpenAIWebThread) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the OpenAIWebThreadMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *OpenAIWebThreadMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.OpenAIWebThread, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *OpenAIWebThreadMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *OpenAIWebThreadMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (OpenAIWebThread).
+func (m *OpenAIWebThreadMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *OpenAIWebThreadMutation) Fields() []string {
+	fields := make([]string, 0, 20)
+	if m.user != nil {
+		fields = append(fields, openaiwebthread.FieldUserID)
+	}
+	if m.group != nil {
+		fields = append(fields, openaiwebthread.FieldGroupID)
+	}
+	if m.account != nil {
+		fields = append(fields, openaiwebthread.FieldAccountID)
+	}
+	if m.local_thread_id != nil {
+		fields = append(fields, openaiwebthread.FieldLocalThreadID)
+	}
+	if m.page_session_id != nil {
+		fields = append(fields, openaiwebthread.FieldPageSessionID)
+	}
+	if m.upstream_conversation_id != nil {
+		fields = append(fields, openaiwebthread.FieldUpstreamConversationID)
+	}
+	if m.upstream_session_id != nil {
+		fields = append(fields, openaiwebthread.FieldUpstreamSessionID)
+	}
+	if m.provider != nil {
+		fields = append(fields, openaiwebthread.FieldProvider)
+	}
+	if m.title != nil {
+		fields = append(fields, openaiwebthread.FieldTitle)
+	}
+	if m.requested_model != nil {
+		fields = append(fields, openaiwebthread.FieldRequestedModel)
+	}
+	if m.capability_mode != nil {
+		fields = append(fields, openaiwebthread.FieldCapabilityMode)
+	}
+	if m.history_mode != nil {
+		fields = append(fields, openaiwebthread.FieldHistoryMode)
+	}
+	if m.cache_policy != nil {
+		fields = append(fields, openaiwebthread.FieldCachePolicy)
+	}
+	if m.sync_status != nil {
+		fields = append(fields, openaiwebthread.FieldSyncStatus)
+	}
+	if m.status != nil {
+		fields = append(fields, openaiwebthread.FieldStatus)
+	}
+	if m.last_synced_at != nil {
+		fields = append(fields, openaiwebthread.FieldLastSyncedAt)
+	}
+	if m.last_error != nil {
+		fields = append(fields, openaiwebthread.FieldLastError)
+	}
+	if m.created_at != nil {
+		fields = append(fields, openaiwebthread.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, openaiwebthread.FieldUpdatedAt)
+	}
+	if m.deleted_at != nil {
+		fields = append(fields, openaiwebthread.FieldDeletedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *OpenAIWebThreadMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case openaiwebthread.FieldUserID:
+		return m.UserID()
+	case openaiwebthread.FieldGroupID:
+		return m.GroupID()
+	case openaiwebthread.FieldAccountID:
+		return m.AccountID()
+	case openaiwebthread.FieldLocalThreadID:
+		return m.LocalThreadID()
+	case openaiwebthread.FieldPageSessionID:
+		return m.PageSessionID()
+	case openaiwebthread.FieldUpstreamConversationID:
+		return m.UpstreamConversationID()
+	case openaiwebthread.FieldUpstreamSessionID:
+		return m.UpstreamSessionID()
+	case openaiwebthread.FieldProvider:
+		return m.Provider()
+	case openaiwebthread.FieldTitle:
+		return m.Title()
+	case openaiwebthread.FieldRequestedModel:
+		return m.RequestedModel()
+	case openaiwebthread.FieldCapabilityMode:
+		return m.CapabilityMode()
+	case openaiwebthread.FieldHistoryMode:
+		return m.HistoryMode()
+	case openaiwebthread.FieldCachePolicy:
+		return m.CachePolicy()
+	case openaiwebthread.FieldSyncStatus:
+		return m.SyncStatus()
+	case openaiwebthread.FieldStatus:
+		return m.Status()
+	case openaiwebthread.FieldLastSyncedAt:
+		return m.LastSyncedAt()
+	case openaiwebthread.FieldLastError:
+		return m.LastError()
+	case openaiwebthread.FieldCreatedAt:
+		return m.CreatedAt()
+	case openaiwebthread.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case openaiwebthread.FieldDeletedAt:
+		return m.DeletedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *OpenAIWebThreadMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case openaiwebthread.FieldUserID:
+		return m.OldUserID(ctx)
+	case openaiwebthread.FieldGroupID:
+		return m.OldGroupID(ctx)
+	case openaiwebthread.FieldAccountID:
+		return m.OldAccountID(ctx)
+	case openaiwebthread.FieldLocalThreadID:
+		return m.OldLocalThreadID(ctx)
+	case openaiwebthread.FieldPageSessionID:
+		return m.OldPageSessionID(ctx)
+	case openaiwebthread.FieldUpstreamConversationID:
+		return m.OldUpstreamConversationID(ctx)
+	case openaiwebthread.FieldUpstreamSessionID:
+		return m.OldUpstreamSessionID(ctx)
+	case openaiwebthread.FieldProvider:
+		return m.OldProvider(ctx)
+	case openaiwebthread.FieldTitle:
+		return m.OldTitle(ctx)
+	case openaiwebthread.FieldRequestedModel:
+		return m.OldRequestedModel(ctx)
+	case openaiwebthread.FieldCapabilityMode:
+		return m.OldCapabilityMode(ctx)
+	case openaiwebthread.FieldHistoryMode:
+		return m.OldHistoryMode(ctx)
+	case openaiwebthread.FieldCachePolicy:
+		return m.OldCachePolicy(ctx)
+	case openaiwebthread.FieldSyncStatus:
+		return m.OldSyncStatus(ctx)
+	case openaiwebthread.FieldStatus:
+		return m.OldStatus(ctx)
+	case openaiwebthread.FieldLastSyncedAt:
+		return m.OldLastSyncedAt(ctx)
+	case openaiwebthread.FieldLastError:
+		return m.OldLastError(ctx)
+	case openaiwebthread.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case openaiwebthread.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case openaiwebthread.FieldDeletedAt:
+		return m.OldDeletedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown OpenAIWebThread field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *OpenAIWebThreadMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case openaiwebthread.FieldUserID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUserID(v)
+		return nil
+	case openaiwebthread.FieldGroupID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGroupID(v)
+		return nil
+	case openaiwebthread.FieldAccountID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAccountID(v)
+		return nil
+	case openaiwebthread.FieldLocalThreadID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLocalThreadID(v)
+		return nil
+	case openaiwebthread.FieldPageSessionID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPageSessionID(v)
+		return nil
+	case openaiwebthread.FieldUpstreamConversationID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpstreamConversationID(v)
+		return nil
+	case openaiwebthread.FieldUpstreamSessionID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpstreamSessionID(v)
+		return nil
+	case openaiwebthread.FieldProvider:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProvider(v)
+		return nil
+	case openaiwebthread.FieldTitle:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTitle(v)
+		return nil
+	case openaiwebthread.FieldRequestedModel:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRequestedModel(v)
+		return nil
+	case openaiwebthread.FieldCapabilityMode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCapabilityMode(v)
+		return nil
+	case openaiwebthread.FieldHistoryMode:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetHistoryMode(v)
+		return nil
+	case openaiwebthread.FieldCachePolicy:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCachePolicy(v)
+		return nil
+	case openaiwebthread.FieldSyncStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSyncStatus(v)
+		return nil
+	case openaiwebthread.FieldStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case openaiwebthread.FieldLastSyncedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastSyncedAt(v)
+		return nil
+	case openaiwebthread.FieldLastError:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastError(v)
+		return nil
+	case openaiwebthread.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case openaiwebthread.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case openaiwebthread.FieldDeletedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDeletedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown OpenAIWebThread field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *OpenAIWebThreadMutation) AddedFields() []string {
+	var fields []string
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *OpenAIWebThreadMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *OpenAIWebThreadMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown OpenAIWebThread numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *OpenAIWebThreadMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(openaiwebthread.FieldUpstreamConversationID) {
+		fields = append(fields, openaiwebthread.FieldUpstreamConversationID)
+	}
+	if m.FieldCleared(openaiwebthread.FieldUpstreamSessionID) {
+		fields = append(fields, openaiwebthread.FieldUpstreamSessionID)
+	}
+	if m.FieldCleared(openaiwebthread.FieldLastSyncedAt) {
+		fields = append(fields, openaiwebthread.FieldLastSyncedAt)
+	}
+	if m.FieldCleared(openaiwebthread.FieldDeletedAt) {
+		fields = append(fields, openaiwebthread.FieldDeletedAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *OpenAIWebThreadMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *OpenAIWebThreadMutation) ClearField(name string) error {
+	switch name {
+	case openaiwebthread.FieldUpstreamConversationID:
+		m.ClearUpstreamConversationID()
+		return nil
+	case openaiwebthread.FieldUpstreamSessionID:
+		m.ClearUpstreamSessionID()
+		return nil
+	case openaiwebthread.FieldLastSyncedAt:
+		m.ClearLastSyncedAt()
+		return nil
+	case openaiwebthread.FieldDeletedAt:
+		m.ClearDeletedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown OpenAIWebThread nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *OpenAIWebThreadMutation) ResetField(name string) error {
+	switch name {
+	case openaiwebthread.FieldUserID:
+		m.ResetUserID()
+		return nil
+	case openaiwebthread.FieldGroupID:
+		m.ResetGroupID()
+		return nil
+	case openaiwebthread.FieldAccountID:
+		m.ResetAccountID()
+		return nil
+	case openaiwebthread.FieldLocalThreadID:
+		m.ResetLocalThreadID()
+		return nil
+	case openaiwebthread.FieldPageSessionID:
+		m.ResetPageSessionID()
+		return nil
+	case openaiwebthread.FieldUpstreamConversationID:
+		m.ResetUpstreamConversationID()
+		return nil
+	case openaiwebthread.FieldUpstreamSessionID:
+		m.ResetUpstreamSessionID()
+		return nil
+	case openaiwebthread.FieldProvider:
+		m.ResetProvider()
+		return nil
+	case openaiwebthread.FieldTitle:
+		m.ResetTitle()
+		return nil
+	case openaiwebthread.FieldRequestedModel:
+		m.ResetRequestedModel()
+		return nil
+	case openaiwebthread.FieldCapabilityMode:
+		m.ResetCapabilityMode()
+		return nil
+	case openaiwebthread.FieldHistoryMode:
+		m.ResetHistoryMode()
+		return nil
+	case openaiwebthread.FieldCachePolicy:
+		m.ResetCachePolicy()
+		return nil
+	case openaiwebthread.FieldSyncStatus:
+		m.ResetSyncStatus()
+		return nil
+	case openaiwebthread.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case openaiwebthread.FieldLastSyncedAt:
+		m.ResetLastSyncedAt()
+		return nil
+	case openaiwebthread.FieldLastError:
+		m.ResetLastError()
+		return nil
+	case openaiwebthread.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case openaiwebthread.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case openaiwebthread.FieldDeletedAt:
+		m.ResetDeletedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown OpenAIWebThread field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *OpenAIWebThreadMutation) AddedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.user != nil {
+		edges = append(edges, openaiwebthread.EdgeUser)
+	}
+	if m.group != nil {
+		edges = append(edges, openaiwebthread.EdgeGroup)
+	}
+	if m.account != nil {
+		edges = append(edges, openaiwebthread.EdgeAccount)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *OpenAIWebThreadMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case openaiwebthread.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	case openaiwebthread.EdgeGroup:
+		if id := m.group; id != nil {
+			return []ent.Value{*id}
+		}
+	case openaiwebthread.EdgeAccount:
+		if id := m.account; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *OpenAIWebThreadMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 3)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *OpenAIWebThreadMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *OpenAIWebThreadMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.cleareduser {
+		edges = append(edges, openaiwebthread.EdgeUser)
+	}
+	if m.clearedgroup {
+		edges = append(edges, openaiwebthread.EdgeGroup)
+	}
+	if m.clearedaccount {
+		edges = append(edges, openaiwebthread.EdgeAccount)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *OpenAIWebThreadMutation) EdgeCleared(name string) bool {
+	switch name {
+	case openaiwebthread.EdgeUser:
+		return m.cleareduser
+	case openaiwebthread.EdgeGroup:
+		return m.clearedgroup
+	case openaiwebthread.EdgeAccount:
+		return m.clearedaccount
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *OpenAIWebThreadMutation) ClearEdge(name string) error {
+	switch name {
+	case openaiwebthread.EdgeUser:
+		m.ClearUser()
+		return nil
+	case openaiwebthread.EdgeGroup:
+		m.ClearGroup()
+		return nil
+	case openaiwebthread.EdgeAccount:
+		m.ClearAccount()
+		return nil
+	}
+	return fmt.Errorf("unknown OpenAIWebThread unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *OpenAIWebThreadMutation) ResetEdge(name string) error {
+	switch name {
+	case openaiwebthread.EdgeUser:
+		m.ResetUser()
+		return nil
+	case openaiwebthread.EdgeGroup:
+		m.ResetGroup()
+		return nil
+	case openaiwebthread.EdgeAccount:
+		m.ResetAccount()
+		return nil
+	}
+	return fmt.Errorf("unknown OpenAIWebThread edge %s", name)
 }
 
 // PaymentAuditLogMutation represents an operation that mutates the PaymentAuditLog nodes in the graph.
@@ -32691,6 +34439,9 @@ type UserMutation struct {
 	subscriptions                 map[int64]struct{}
 	removedsubscriptions          map[int64]struct{}
 	clearedsubscriptions          bool
+	openai_web_threads            map[int64]struct{}
+	removedopenai_web_threads     map[int64]struct{}
+	clearedopenai_web_threads     bool
 	assigned_subscriptions        map[int64]struct{}
 	removedassigned_subscriptions map[int64]struct{}
 	clearedassigned_subscriptions bool
@@ -33934,6 +35685,60 @@ func (m *UserMutation) ResetSubscriptions() {
 	m.removedsubscriptions = nil
 }
 
+// AddOpenaiWebThreadIDs adds the "openai_web_threads" edge to the OpenAIWebThread entity by ids.
+func (m *UserMutation) AddOpenaiWebThreadIDs(ids ...int64) {
+	if m.openai_web_threads == nil {
+		m.openai_web_threads = make(map[int64]struct{})
+	}
+	for i := range ids {
+		m.openai_web_threads[ids[i]] = struct{}{}
+	}
+}
+
+// ClearOpenaiWebThreads clears the "openai_web_threads" edge to the OpenAIWebThread entity.
+func (m *UserMutation) ClearOpenaiWebThreads() {
+	m.clearedopenai_web_threads = true
+}
+
+// OpenaiWebThreadsCleared reports if the "openai_web_threads" edge to the OpenAIWebThread entity was cleared.
+func (m *UserMutation) OpenaiWebThreadsCleared() bool {
+	return m.clearedopenai_web_threads
+}
+
+// RemoveOpenaiWebThreadIDs removes the "openai_web_threads" edge to the OpenAIWebThread entity by IDs.
+func (m *UserMutation) RemoveOpenaiWebThreadIDs(ids ...int64) {
+	if m.removedopenai_web_threads == nil {
+		m.removedopenai_web_threads = make(map[int64]struct{})
+	}
+	for i := range ids {
+		delete(m.openai_web_threads, ids[i])
+		m.removedopenai_web_threads[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedOpenaiWebThreads returns the removed IDs of the "openai_web_threads" edge to the OpenAIWebThread entity.
+func (m *UserMutation) RemovedOpenaiWebThreadsIDs() (ids []int64) {
+	for id := range m.removedopenai_web_threads {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// OpenaiWebThreadsIDs returns the "openai_web_threads" edge IDs in the mutation.
+func (m *UserMutation) OpenaiWebThreadsIDs() (ids []int64) {
+	for id := range m.openai_web_threads {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetOpenaiWebThreads resets all changes to the "openai_web_threads" edge.
+func (m *UserMutation) ResetOpenaiWebThreads() {
+	m.openai_web_threads = nil
+	m.clearedopenai_web_threads = false
+	m.removedopenai_web_threads = nil
+}
+
 // AddAssignedSubscriptionIDs adds the "assigned_subscriptions" edge to the UserSubscription entity by ids.
 func (m *UserMutation) AddAssignedSubscriptionIDs(ids ...int64) {
 	if m.assigned_subscriptions == nil {
@@ -35000,7 +36805,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 12)
+	edges := make([]string, 0, 13)
 	if m.api_keys != nil {
 		edges = append(edges, user.EdgeAPIKeys)
 	}
@@ -35009,6 +36814,9 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.subscriptions != nil {
 		edges = append(edges, user.EdgeSubscriptions)
+	}
+	if m.openai_web_threads != nil {
+		edges = append(edges, user.EdgeOpenaiWebThreads)
 	}
 	if m.assigned_subscriptions != nil {
 		edges = append(edges, user.EdgeAssignedSubscriptions)
@@ -35059,6 +36867,12 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 	case user.EdgeSubscriptions:
 		ids := make([]ent.Value, 0, len(m.subscriptions))
 		for id := range m.subscriptions {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeOpenaiWebThreads:
+		ids := make([]ent.Value, 0, len(m.openai_web_threads))
+		for id := range m.openai_web_threads {
 			ids = append(ids, id)
 		}
 		return ids
@@ -35122,7 +36936,7 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 12)
+	edges := make([]string, 0, 13)
 	if m.removedapi_keys != nil {
 		edges = append(edges, user.EdgeAPIKeys)
 	}
@@ -35131,6 +36945,9 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removedsubscriptions != nil {
 		edges = append(edges, user.EdgeSubscriptions)
+	}
+	if m.removedopenai_web_threads != nil {
+		edges = append(edges, user.EdgeOpenaiWebThreads)
 	}
 	if m.removedassigned_subscriptions != nil {
 		edges = append(edges, user.EdgeAssignedSubscriptions)
@@ -35181,6 +36998,12 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 	case user.EdgeSubscriptions:
 		ids := make([]ent.Value, 0, len(m.removedsubscriptions))
 		for id := range m.removedsubscriptions {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeOpenaiWebThreads:
+		ids := make([]ent.Value, 0, len(m.removedopenai_web_threads))
+		for id := range m.removedopenai_web_threads {
 			ids = append(ids, id)
 		}
 		return ids
@@ -35244,7 +37067,7 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 12)
+	edges := make([]string, 0, 13)
 	if m.clearedapi_keys {
 		edges = append(edges, user.EdgeAPIKeys)
 	}
@@ -35253,6 +37076,9 @@ func (m *UserMutation) ClearedEdges() []string {
 	}
 	if m.clearedsubscriptions {
 		edges = append(edges, user.EdgeSubscriptions)
+	}
+	if m.clearedopenai_web_threads {
+		edges = append(edges, user.EdgeOpenaiWebThreads)
 	}
 	if m.clearedassigned_subscriptions {
 		edges = append(edges, user.EdgeAssignedSubscriptions)
@@ -35294,6 +37120,8 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedredeem_codes
 	case user.EdgeSubscriptions:
 		return m.clearedsubscriptions
+	case user.EdgeOpenaiWebThreads:
+		return m.clearedopenai_web_threads
 	case user.EdgeAssignedSubscriptions:
 		return m.clearedassigned_subscriptions
 	case user.EdgeAnnouncementReads:
@@ -35336,6 +37164,9 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeSubscriptions:
 		m.ResetSubscriptions()
+		return nil
+	case user.EdgeOpenaiWebThreads:
+		m.ResetOpenaiWebThreads()
 		return nil
 	case user.EdgeAssignedSubscriptions:
 		m.ResetAssignedSubscriptions()

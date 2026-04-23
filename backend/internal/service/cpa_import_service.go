@@ -724,16 +724,19 @@ func parseCodexCPACandidate(fileName string, payload map[string]any) (*cpaImport
 		return nil, errors.New("missing access_token")
 	}
 	email := strings.TrimSpace(anyToString(payload["email"]))
-	accountID := strings.TrimSpace(anyToString(payload["account_id"]))
+	accountID := chooseFirstNonEmpty(
+		anyToString(payload["chatgpt_account_id"]),
+		anyToString(payload["account_id"]),
+	)
 	warnings := make([]string, 0, 2)
 
 	idToken := strings.TrimSpace(anyToString(payload["id_token"]))
-	if email == "" && idToken != "" {
-		if claims, err := openai.DecodeIDToken(idToken); err == nil {
-			if userInfo := claims.GetUserInfo(); userInfo != nil && strings.TrimSpace(userInfo.Email) != "" {
-				email = strings.TrimSpace(userInfo.Email)
-			}
-		}
+	userInfo := decodeCPAOpenAIUserInfo(idToken)
+	if email == "" && userInfo != nil {
+		email = strings.TrimSpace(userInfo.Email)
+	}
+	if accountID == "" && userInfo != nil {
+		accountID = strings.TrimSpace(userInfo.ChatGPTAccountID)
 	}
 	primaryID := chooseFirstNonEmpty(joinNonEmpty(":", email, accountID), email, accountID, fallbackCPAIdentity(fileName))
 	sourceKey, warning := buildCPASourceKey("codex", primaryID)
@@ -759,6 +762,7 @@ func parseCodexCPACandidate(fileName string, payload map[string]any) (*cpaImport
 	if accountID != "" {
 		credentials["chatgpt_account_id"] = accountID
 	}
+	enrichCPAOpenAICredentials(credentials, payload, userInfo)
 
 	extra := buildCPAExtra(fileName, "codex", sourceKey, email)
 	assignIfNotEmpty(extra, "cpa_account_id", accountID)
@@ -777,6 +781,55 @@ func parseCodexCPACandidate(fileName string, payload map[string]any) (*cpaImport
 		extra:       extra,
 		warnings:    warnings,
 	}, nil
+}
+
+func decodeCPAOpenAIUserInfo(idToken string) *openai.UserInfo {
+	idToken = strings.TrimSpace(idToken)
+	if idToken == "" {
+		return nil
+	}
+	claims, err := openai.DecodeIDToken(idToken)
+	if err != nil {
+		return nil
+	}
+	return claims.GetUserInfo()
+}
+
+func enrichCPAOpenAICredentials(credentials map[string]any, payload map[string]any, userInfo *openai.UserInfo) {
+	if credentials == nil {
+		return
+	}
+
+	setIfMissing := func(key string, value any) {
+		if strings.TrimSpace(anyToString(credentials[key])) != "" {
+			return
+		}
+		trimmed := strings.TrimSpace(anyToString(value))
+		if trimmed == "" {
+			return
+		}
+		credentials[key] = trimmed
+	}
+
+	setIfMissing("email", payload["email"])
+	setIfMissing("chatgpt_account_id", chooseFirstNonEmpty(
+		anyToString(payload["chatgpt_account_id"]),
+		anyToString(payload["account_id"]),
+	))
+	setIfMissing("chatgpt_user_id", payload["chatgpt_user_id"])
+	setIfMissing("organization_id", payload["organization_id"])
+	setIfMissing("plan_type", payload["plan_type"])
+	setIfMissing("subscription_expires_at", payload["subscription_expires_at"])
+
+	if userInfo == nil {
+		return
+	}
+
+	setIfMissing("email", userInfo.Email)
+	setIfMissing("chatgpt_account_id", userInfo.ChatGPTAccountID)
+	setIfMissing("chatgpt_user_id", userInfo.ChatGPTUserID)
+	setIfMissing("organization_id", userInfo.OrganizationID)
+	setIfMissing("plan_type", userInfo.PlanType)
 }
 
 func parseGeminiCPACandidate(fileName string, payload map[string]any) (*cpaImportCandidate, error) {

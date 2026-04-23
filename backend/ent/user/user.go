@@ -65,6 +65,8 @@ const (
 	EdgeRedeemCodes = "redeem_codes"
 	// EdgeSubscriptions holds the string denoting the subscriptions edge name in mutations.
 	EdgeSubscriptions = "subscriptions"
+	// EdgeOpenaiWebThreads holds the string denoting the openai_web_threads edge name in mutations.
+	EdgeOpenaiWebThreads = "openai_web_threads"
 	// EdgeAssignedSubscriptions holds the string denoting the assigned_subscriptions edge name in mutations.
 	EdgeAssignedSubscriptions = "assigned_subscriptions"
 	// EdgeAnnouncementReads holds the string denoting the announcement_reads edge name in mutations.
@@ -108,6 +110,13 @@ const (
 	SubscriptionsInverseTable = "user_subscriptions"
 	// SubscriptionsColumn is the table column denoting the subscriptions relation/edge.
 	SubscriptionsColumn = "user_id"
+	// OpenaiWebThreadsTable is the table that holds the openai_web_threads relation/edge.
+	OpenaiWebThreadsTable = "openai_web_threads"
+	// OpenaiWebThreadsInverseTable is the table name for the OpenAIWebThread entity.
+	// It exists in this package in order to avoid circular dependency with the "openaiwebthread" package.
+	OpenaiWebThreadsInverseTable = "openai_web_threads"
+	// OpenaiWebThreadsColumn is the table column denoting the openai_web_threads relation/edge.
+	OpenaiWebThreadsColumn = "user_id"
 	// AssignedSubscriptionsTable is the table that holds the assigned_subscriptions relation/edge.
 	AssignedSubscriptionsTable = "user_subscriptions"
 	// AssignedSubscriptionsInverseTable is the table name for the UserSubscription entity.
@@ -433,6 +442,20 @@ func BySubscriptions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByOpenaiWebThreadsCount orders the results by openai_web_threads count.
+func ByOpenaiWebThreadsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newOpenaiWebThreadsStep(), opts...)
+	}
+}
+
+// ByOpenaiWebThreads orders the results by openai_web_threads terms.
+func ByOpenaiWebThreads(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newOpenaiWebThreadsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByAssignedSubscriptionsCount orders the results by assigned_subscriptions count.
 func ByAssignedSubscriptionsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -591,6 +614,13 @@ func newSubscriptionsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(SubscriptionsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, SubscriptionsTable, SubscriptionsColumn),
+	)
+}
+func newOpenaiWebThreadsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(OpenaiWebThreadsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, OpenaiWebThreadsTable, OpenaiWebThreadsColumn),
 	)
 }
 func newAssignedSubscriptionsStep() *sqlgraph.Step {

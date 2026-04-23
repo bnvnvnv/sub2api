@@ -26,6 +26,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/idempotencyrecord"
 	"github.com/Wei-Shaw/sub2api/ent/identityadoptiondecision"
+	"github.com/Wei-Shaw/sub2api/ent/openaiwebthread"
 	"github.com/Wei-Shaw/sub2api/ent/paymentauditlog"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
 	"github.com/Wei-Shaw/sub2api/ent/paymentproviderinstance"
@@ -76,6 +77,8 @@ type Client struct {
 	IdempotencyRecord *IdempotencyRecordClient
 	// IdentityAdoptionDecision is the client for interacting with the IdentityAdoptionDecision builders.
 	IdentityAdoptionDecision *IdentityAdoptionDecisionClient
+	// OpenAIWebThread is the client for interacting with the OpenAIWebThread builders.
+	OpenAIWebThread *OpenAIWebThreadClient
 	// PaymentAuditLog is the client for interacting with the PaymentAuditLog builders.
 	PaymentAuditLog *PaymentAuditLogClient
 	// PaymentOrder is the client for interacting with the PaymentOrder builders.
@@ -136,6 +139,7 @@ func (c *Client) init() {
 	c.Group = NewGroupClient(c.config)
 	c.IdempotencyRecord = NewIdempotencyRecordClient(c.config)
 	c.IdentityAdoptionDecision = NewIdentityAdoptionDecisionClient(c.config)
+	c.OpenAIWebThread = NewOpenAIWebThreadClient(c.config)
 	c.PaymentAuditLog = NewPaymentAuditLogClient(c.config)
 	c.PaymentOrder = NewPaymentOrderClient(c.config)
 	c.PaymentProviderInstance = NewPaymentProviderInstanceClient(c.config)
@@ -258,6 +262,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Group:                    NewGroupClient(cfg),
 		IdempotencyRecord:        NewIdempotencyRecordClient(cfg),
 		IdentityAdoptionDecision: NewIdentityAdoptionDecisionClient(cfg),
+		OpenAIWebThread:          NewOpenAIWebThreadClient(cfg),
 		PaymentAuditLog:          NewPaymentAuditLogClient(cfg),
 		PaymentOrder:             NewPaymentOrderClient(cfg),
 		PaymentProviderInstance:  NewPaymentProviderInstanceClient(cfg),
@@ -307,6 +312,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Group:                    NewGroupClient(cfg),
 		IdempotencyRecord:        NewIdempotencyRecordClient(cfg),
 		IdentityAdoptionDecision: NewIdentityAdoptionDecisionClient(cfg),
+		OpenAIWebThread:          NewOpenAIWebThreadClient(cfg),
 		PaymentAuditLog:          NewPaymentAuditLogClient(cfg),
 		PaymentOrder:             NewPaymentOrderClient(cfg),
 		PaymentProviderInstance:  NewPaymentProviderInstanceClient(cfg),
@@ -357,12 +363,12 @@ func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
 		c.APIKey, c.Account, c.AccountGroup, c.Announcement, c.AnnouncementRead,
 		c.AuthIdentity, c.AuthIdentityChannel, c.ErrorPassthroughRule, c.Group,
-		c.IdempotencyRecord, c.IdentityAdoptionDecision, c.PaymentAuditLog,
-		c.PaymentOrder, c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode,
-		c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting,
-		c.SubscriptionPlan, c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog,
-		c.User, c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
-		c.UserSubscription,
+		c.IdempotencyRecord, c.IdentityAdoptionDecision, c.OpenAIWebThread,
+		c.PaymentAuditLog, c.PaymentOrder, c.PaymentProviderInstance,
+		c.PendingAuthSession, c.PromoCode, c.PromoCodeUsage, c.Proxy, c.RedeemCode,
+		c.SecuritySecret, c.Setting, c.SubscriptionPlan, c.TLSFingerprintProfile,
+		c.UsageCleanupTask, c.UsageLog, c.User, c.UserAllowedGroup,
+		c.UserAttributeDefinition, c.UserAttributeValue, c.UserSubscription,
 	} {
 		n.Use(hooks...)
 	}
@@ -374,12 +380,12 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
 		c.APIKey, c.Account, c.AccountGroup, c.Announcement, c.AnnouncementRead,
 		c.AuthIdentity, c.AuthIdentityChannel, c.ErrorPassthroughRule, c.Group,
-		c.IdempotencyRecord, c.IdentityAdoptionDecision, c.PaymentAuditLog,
-		c.PaymentOrder, c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode,
-		c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting,
-		c.SubscriptionPlan, c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog,
-		c.User, c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
-		c.UserSubscription,
+		c.IdempotencyRecord, c.IdentityAdoptionDecision, c.OpenAIWebThread,
+		c.PaymentAuditLog, c.PaymentOrder, c.PaymentProviderInstance,
+		c.PendingAuthSession, c.PromoCode, c.PromoCodeUsage, c.Proxy, c.RedeemCode,
+		c.SecuritySecret, c.Setting, c.SubscriptionPlan, c.TLSFingerprintProfile,
+		c.UsageCleanupTask, c.UsageLog, c.User, c.UserAllowedGroup,
+		c.UserAttributeDefinition, c.UserAttributeValue, c.UserSubscription,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -410,6 +416,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.IdempotencyRecord.mutate(ctx, m)
 	case *IdentityAdoptionDecisionMutation:
 		return c.IdentityAdoptionDecision.mutate(ctx, m)
+	case *OpenAIWebThreadMutation:
+		return c.OpenAIWebThread.mutate(ctx, m)
 	case *PaymentAuditLogMutation:
 		return c.PaymentAuditLog.mutate(ctx, m)
 	case *PaymentOrderMutation:
@@ -785,6 +793,22 @@ func (c *AccountClient) QueryUsageLogs(_m *Account) *UsageLogQuery {
 			sqlgraph.From(account.Table, account.FieldID, id),
 			sqlgraph.To(usagelog.Table, usagelog.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, account.UsageLogsTable, account.UsageLogsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryOpenaiWebThreads queries the openai_web_threads edge of a Account.
+func (c *AccountClient) QueryOpenaiWebThreads(_m *Account) *OpenAIWebThreadQuery {
+	query := (&OpenAIWebThreadClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(account.Table, account.FieldID, id),
+			sqlgraph.To(openaiwebthread.Table, openaiwebthread.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, account.OpenaiWebThreadsTable, account.OpenaiWebThreadsColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -1884,6 +1908,22 @@ func (c *GroupClient) QuerySubscriptions(_m *Group) *UserSubscriptionQuery {
 	return query
 }
 
+// QueryOpenaiWebThreads queries the openai_web_threads edge of a Group.
+func (c *GroupClient) QueryOpenaiWebThreads(_m *Group) *OpenAIWebThreadQuery {
+	query := (&OpenAIWebThreadClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(group.Table, group.FieldID, id),
+			sqlgraph.To(openaiwebthread.Table, openaiwebthread.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, group.OpenaiWebThreadsTable, group.OpenaiWebThreadsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryUsageLogs queries the usage_logs edge of a Group.
 func (c *GroupClient) QueryUsageLogs(_m *Group) *UsageLogQuery {
 	query := (&UsageLogClient{config: c.config}).Query()
@@ -2286,6 +2326,187 @@ func (c *IdentityAdoptionDecisionClient) mutate(ctx context.Context, m *Identity
 		return (&IdentityAdoptionDecisionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown IdentityAdoptionDecision mutation op: %q", m.Op())
+	}
+}
+
+// OpenAIWebThreadClient is a client for the OpenAIWebThread schema.
+type OpenAIWebThreadClient struct {
+	config
+}
+
+// NewOpenAIWebThreadClient returns a client for the OpenAIWebThread from the given config.
+func NewOpenAIWebThreadClient(c config) *OpenAIWebThreadClient {
+	return &OpenAIWebThreadClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `openaiwebthread.Hooks(f(g(h())))`.
+func (c *OpenAIWebThreadClient) Use(hooks ...Hook) {
+	c.hooks.OpenAIWebThread = append(c.hooks.OpenAIWebThread, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `openaiwebthread.Intercept(f(g(h())))`.
+func (c *OpenAIWebThreadClient) Intercept(interceptors ...Interceptor) {
+	c.inters.OpenAIWebThread = append(c.inters.OpenAIWebThread, interceptors...)
+}
+
+// Create returns a builder for creating a OpenAIWebThread entity.
+func (c *OpenAIWebThreadClient) Create() *OpenAIWebThreadCreate {
+	mutation := newOpenAIWebThreadMutation(c.config, OpCreate)
+	return &OpenAIWebThreadCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of OpenAIWebThread entities.
+func (c *OpenAIWebThreadClient) CreateBulk(builders ...*OpenAIWebThreadCreate) *OpenAIWebThreadCreateBulk {
+	return &OpenAIWebThreadCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *OpenAIWebThreadClient) MapCreateBulk(slice any, setFunc func(*OpenAIWebThreadCreate, int)) *OpenAIWebThreadCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &OpenAIWebThreadCreateBulk{err: fmt.Errorf("calling to OpenAIWebThreadClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*OpenAIWebThreadCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &OpenAIWebThreadCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for OpenAIWebThread.
+func (c *OpenAIWebThreadClient) Update() *OpenAIWebThreadUpdate {
+	mutation := newOpenAIWebThreadMutation(c.config, OpUpdate)
+	return &OpenAIWebThreadUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *OpenAIWebThreadClient) UpdateOne(_m *OpenAIWebThread) *OpenAIWebThreadUpdateOne {
+	mutation := newOpenAIWebThreadMutation(c.config, OpUpdateOne, withOpenAIWebThread(_m))
+	return &OpenAIWebThreadUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *OpenAIWebThreadClient) UpdateOneID(id int64) *OpenAIWebThreadUpdateOne {
+	mutation := newOpenAIWebThreadMutation(c.config, OpUpdateOne, withOpenAIWebThreadID(id))
+	return &OpenAIWebThreadUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for OpenAIWebThread.
+func (c *OpenAIWebThreadClient) Delete() *OpenAIWebThreadDelete {
+	mutation := newOpenAIWebThreadMutation(c.config, OpDelete)
+	return &OpenAIWebThreadDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *OpenAIWebThreadClient) DeleteOne(_m *OpenAIWebThread) *OpenAIWebThreadDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *OpenAIWebThreadClient) DeleteOneID(id int64) *OpenAIWebThreadDeleteOne {
+	builder := c.Delete().Where(openaiwebthread.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &OpenAIWebThreadDeleteOne{builder}
+}
+
+// Query returns a query builder for OpenAIWebThread.
+func (c *OpenAIWebThreadClient) Query() *OpenAIWebThreadQuery {
+	return &OpenAIWebThreadQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeOpenAIWebThread},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a OpenAIWebThread entity by its id.
+func (c *OpenAIWebThreadClient) Get(ctx context.Context, id int64) (*OpenAIWebThread, error) {
+	return c.Query().Where(openaiwebthread.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *OpenAIWebThreadClient) GetX(ctx context.Context, id int64) *OpenAIWebThread {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a OpenAIWebThread.
+func (c *OpenAIWebThreadClient) QueryUser(_m *OpenAIWebThread) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(openaiwebthread.Table, openaiwebthread.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, openaiwebthread.UserTable, openaiwebthread.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryGroup queries the group edge of a OpenAIWebThread.
+func (c *OpenAIWebThreadClient) QueryGroup(_m *OpenAIWebThread) *GroupQuery {
+	query := (&GroupClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(openaiwebthread.Table, openaiwebthread.FieldID, id),
+			sqlgraph.To(group.Table, group.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, openaiwebthread.GroupTable, openaiwebthread.GroupColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAccount queries the account edge of a OpenAIWebThread.
+func (c *OpenAIWebThreadClient) QueryAccount(_m *OpenAIWebThread) *AccountQuery {
+	query := (&AccountClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(openaiwebthread.Table, openaiwebthread.FieldID, id),
+			sqlgraph.To(account.Table, account.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, openaiwebthread.AccountTable, openaiwebthread.AccountColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *OpenAIWebThreadClient) Hooks() []Hook {
+	return c.hooks.OpenAIWebThread
+}
+
+// Interceptors returns the client interceptors.
+func (c *OpenAIWebThreadClient) Interceptors() []Interceptor {
+	return c.inters.OpenAIWebThread
+}
+
+func (c *OpenAIWebThreadClient) mutate(ctx context.Context, m *OpenAIWebThreadMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&OpenAIWebThreadCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&OpenAIWebThreadUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&OpenAIWebThreadUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&OpenAIWebThreadDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown OpenAIWebThread mutation op: %q", m.Op())
 	}
 }
 
@@ -4533,6 +4754,22 @@ func (c *UserClient) QuerySubscriptions(_m *User) *UserSubscriptionQuery {
 	return query
 }
 
+// QueryOpenaiWebThreads queries the openai_web_threads edge of a User.
+func (c *UserClient) QueryOpenaiWebThreads(_m *User) *OpenAIWebThreadQuery {
+	query := (&OpenAIWebThreadClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(openaiwebthread.Table, openaiwebthread.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.OpenaiWebThreadsTable, user.OpenaiWebThreadsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryAssignedSubscriptions queries the assigned_subscriptions edge of a User.
 func (c *UserClient) QueryAssignedSubscriptions(_m *User) *UserSubscriptionQuery {
 	query := (&UserSubscriptionClient{config: c.config}).Query()
@@ -5356,7 +5593,7 @@ type (
 	hooks struct {
 		APIKey, Account, AccountGroup, Announcement, AnnouncementRead, AuthIdentity,
 		AuthIdentityChannel, ErrorPassthroughRule, Group, IdempotencyRecord,
-		IdentityAdoptionDecision, PaymentAuditLog, PaymentOrder,
+		IdentityAdoptionDecision, OpenAIWebThread, PaymentAuditLog, PaymentOrder,
 		PaymentProviderInstance, PendingAuthSession, PromoCode, PromoCodeUsage, Proxy,
 		RedeemCode, SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,
 		UsageCleanupTask, UsageLog, User, UserAllowedGroup, UserAttributeDefinition,
@@ -5365,7 +5602,7 @@ type (
 	inters struct {
 		APIKey, Account, AccountGroup, Announcement, AnnouncementRead, AuthIdentity,
 		AuthIdentityChannel, ErrorPassthroughRule, Group, IdempotencyRecord,
-		IdentityAdoptionDecision, PaymentAuditLog, PaymentOrder,
+		IdentityAdoptionDecision, OpenAIWebThread, PaymentAuditLog, PaymentOrder,
 		PaymentProviderInstance, PendingAuthSession, PromoCode, PromoCodeUsage, Proxy,
 		RedeemCode, SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,
 		UsageCleanupTask, UsageLog, User, UserAllowedGroup, UserAttributeDefinition,

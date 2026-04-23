@@ -42,7 +42,6 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 
 		// Server layer ProviderSet
 		server.ProviderSet,
-
 		// Privacy client factory for OpenAI training opt-out
 		providePrivacyClientFactory,
 

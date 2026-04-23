@@ -611,6 +611,98 @@ var (
 			},
 		},
 	}
+	// OpenaiWebThreadsColumns holds the columns for the "openai_web_threads" table.
+	OpenaiWebThreadsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "local_thread_id", Type: field.TypeString, Unique: true, Size: 64},
+		{Name: "page_session_id", Type: field.TypeString, Unique: true, Size: 64},
+		{Name: "upstream_conversation_id", Type: field.TypeString, Nullable: true, Size: 128},
+		{Name: "upstream_session_id", Type: field.TypeString, Nullable: true, Size: 128},
+		{Name: "provider", Type: field.TypeString, Size: 32, Default: "openai_web"},
+		{Name: "title", Type: field.TypeString, Size: 255, Default: ""},
+		{Name: "requested_model", Type: field.TypeString, Size: 100, Default: ""},
+		{Name: "capability_mode", Type: field.TypeString, Size: 32, Default: "web_chat"},
+		{Name: "history_mode", Type: field.TypeString, Size: 32, Default: "upstream_only"},
+		{Name: "cache_policy", Type: field.TypeString, Size: 32, Default: "local_only"},
+		{Name: "sync_status", Type: field.TypeString, Size: 32, Default: "pending"},
+		{Name: "status", Type: field.TypeString, Size: 32, Default: "active"},
+		{Name: "last_synced_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "last_error", Type: field.TypeString, Default: "", SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "account_id", Type: field.TypeInt64},
+		{Name: "group_id", Type: field.TypeInt64},
+		{Name: "user_id", Type: field.TypeInt64},
+	}
+	// OpenaiWebThreadsTable holds the schema information for the "openai_web_threads" table.
+	OpenaiWebThreadsTable = &schema.Table{
+		Name:       "openai_web_threads",
+		Columns:    OpenaiWebThreadsColumns,
+		PrimaryKey: []*schema.Column{OpenaiWebThreadsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "openai_web_threads_accounts_openai_web_threads",
+				Columns:    []*schema.Column{OpenaiWebThreadsColumns[18]},
+				RefColumns: []*schema.Column{AccountsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "openai_web_threads_groups_openai_web_threads",
+				Columns:    []*schema.Column{OpenaiWebThreadsColumns[19]},
+				RefColumns: []*schema.Column{GroupsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "openai_web_threads_users_openai_web_threads",
+				Columns:    []*schema.Column{OpenaiWebThreadsColumns[20]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "openaiwebthread_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{OpenaiWebThreadsColumns[20]},
+			},
+			{
+				Name:    "openaiwebthread_group_id",
+				Unique:  false,
+				Columns: []*schema.Column{OpenaiWebThreadsColumns[19]},
+			},
+			{
+				Name:    "openaiwebthread_account_id",
+				Unique:  false,
+				Columns: []*schema.Column{OpenaiWebThreadsColumns[18]},
+			},
+			{
+				Name:    "openaiwebthread_local_thread_id",
+				Unique:  false,
+				Columns: []*schema.Column{OpenaiWebThreadsColumns[1]},
+			},
+			{
+				Name:    "openaiwebthread_page_session_id",
+				Unique:  false,
+				Columns: []*schema.Column{OpenaiWebThreadsColumns[2]},
+			},
+			{
+				Name:    "openaiwebthread_upstream_conversation_id",
+				Unique:  false,
+				Columns: []*schema.Column{OpenaiWebThreadsColumns[3]},
+			},
+			{
+				Name:    "openaiwebthread_deleted_at",
+				Unique:  false,
+				Columns: []*schema.Column{OpenaiWebThreadsColumns[17]},
+			},
+			{
+				Name:    "openaiwebthread_user_id_updated_at",
+				Unique:  false,
+				Columns: []*schema.Column{OpenaiWebThreadsColumns[20], OpenaiWebThreadsColumns[16]},
+			},
+		},
+	}
 	// PaymentAuditLogsColumns holds the columns for the "payment_audit_logs" table.
 	PaymentAuditLogsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -1276,7 +1368,7 @@ var (
 		{Name: "totp_secret_encrypted", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"postgres": "text"}},
 		{Name: "totp_enabled", Type: field.TypeBool, Default: false},
 		{Name: "totp_enabled_at", Type: field.TypeTime, Nullable: true},
-		{Name: "signup_source", Type: field.TypeString, Size: 20, Default: "email"},
+		{Name: "signup_source", Type: field.TypeString, Default: "email"},
 		{Name: "last_login_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
 		{Name: "last_active_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
 		{Name: "balance_notify_enabled", Type: field.TypeBool, Default: true},
@@ -1524,6 +1616,7 @@ var (
 		GroupsTable,
 		IdempotencyRecordsTable,
 		IdentityAdoptionDecisionsTable,
+		OpenaiWebThreadsTable,
 		PaymentAuditLogsTable,
 		PaymentOrdersTable,
 		PaymentProviderInstancesTable,
@@ -1590,6 +1683,12 @@ func init() {
 	IdentityAdoptionDecisionsTable.ForeignKeys[1].RefTable = PendingAuthSessionsTable
 	IdentityAdoptionDecisionsTable.Annotation = &entsql.Annotation{
 		Table: "identity_adoption_decisions",
+	}
+	OpenaiWebThreadsTable.ForeignKeys[0].RefTable = AccountsTable
+	OpenaiWebThreadsTable.ForeignKeys[1].RefTable = GroupsTable
+	OpenaiWebThreadsTable.ForeignKeys[2].RefTable = UsersTable
+	OpenaiWebThreadsTable.Annotation = &entsql.Annotation{
+		Table: "openai_web_threads",
 	}
 	PaymentAuditLogsTable.Annotation = &entsql.Annotation{
 		Table: "payment_audit_logs",

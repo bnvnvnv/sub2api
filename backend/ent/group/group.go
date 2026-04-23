@@ -82,6 +82,8 @@ const (
 	EdgeRedeemCodes = "redeem_codes"
 	// EdgeSubscriptions holds the string denoting the subscriptions edge name in mutations.
 	EdgeSubscriptions = "subscriptions"
+	// EdgeOpenaiWebThreads holds the string denoting the openai_web_threads edge name in mutations.
+	EdgeOpenaiWebThreads = "openai_web_threads"
 	// EdgeUsageLogs holds the string denoting the usage_logs edge name in mutations.
 	EdgeUsageLogs = "usage_logs"
 	// EdgeAccounts holds the string denoting the accounts edge name in mutations.
@@ -115,6 +117,13 @@ const (
 	SubscriptionsInverseTable = "user_subscriptions"
 	// SubscriptionsColumn is the table column denoting the subscriptions relation/edge.
 	SubscriptionsColumn = "group_id"
+	// OpenaiWebThreadsTable is the table that holds the openai_web_threads relation/edge.
+	OpenaiWebThreadsTable = "openai_web_threads"
+	// OpenaiWebThreadsInverseTable is the table name for the OpenAIWebThread entity.
+	// It exists in this package in order to avoid circular dependency with the "openaiwebthread" package.
+	OpenaiWebThreadsInverseTable = "openai_web_threads"
+	// OpenaiWebThreadsColumn is the table column denoting the openai_web_threads relation/edge.
+	OpenaiWebThreadsColumn = "group_id"
 	// UsageLogsTable is the table that holds the usage_logs relation/edge.
 	UsageLogsTable = "usage_logs"
 	// UsageLogsInverseTable is the table name for the UsageLog entity.
@@ -445,6 +454,20 @@ func BySubscriptions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByOpenaiWebThreadsCount orders the results by openai_web_threads count.
+func ByOpenaiWebThreadsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newOpenaiWebThreadsStep(), opts...)
+	}
+}
+
+// ByOpenaiWebThreads orders the results by openai_web_threads terms.
+func ByOpenaiWebThreads(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newOpenaiWebThreadsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByUsageLogsCount orders the results by usage_logs count.
 func ByUsageLogsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -533,6 +556,13 @@ func newSubscriptionsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(SubscriptionsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, SubscriptionsTable, SubscriptionsColumn),
+	)
+}
+func newOpenaiWebThreadsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(OpenaiWebThreadsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, OpenaiWebThreadsTable, OpenaiWebThreadsColumn),
 	)
 }
 func newUsageLogsStep() *sqlgraph.Step {
