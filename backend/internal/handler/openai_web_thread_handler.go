@@ -18,6 +18,21 @@ type CreateOpenAIWebThreadRequest struct {
 	CachePolicy    string `json:"cache_policy"`
 }
 
+type SendOpenAIWebThreadMessageRequest struct {
+	RequestedModel  string                                 `json:"requested_model,omitempty"`
+	ReasoningEffort string                                 `json:"reasoning_effort,omitempty"`
+	Content         string                                 `json:"content"`
+	Attachments     []SendOpenAIWebThreadAttachmentRequest `json:"attachments,omitempty"`
+}
+
+type SendOpenAIWebThreadAttachmentRequest struct {
+	FileName    string `json:"file_name"`
+	ContentType string `json:"content_type"`
+	DataURL     string `json:"data_url"`
+	Width       int    `json:"width,omitempty"`
+	Height      int    `json:"height,omitempty"`
+}
+
 type OpenAIWebThreadHandler struct {
 	threadService *service.OpenAIWebThreadService
 }
@@ -115,4 +130,53 @@ func (h *OpenAIWebThreadHandler) ArchiveThread(c *gin.Context) {
 	}
 
 	response.Success(c, gin.H{"archived": true})
+}
+
+func (h *OpenAIWebThreadHandler) SendThreadMessage(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+
+	var req SendOpenAIWebThreadMessageRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+
+	result, err := h.threadService.SendUserThreadMessage(c.Request.Context(), &service.SendOpenAIWebThreadMessageInput{
+		UserID:          subject.UserID,
+		LocalThreadID:   c.Param("id"),
+		RequestedModel:  strings.TrimSpace(req.RequestedModel),
+		ReasoningEffort: strings.TrimSpace(req.ReasoningEffort),
+		Content:         strings.TrimSpace(req.Content),
+		Attachments:     openAIWebThreadAttachmentsFromRequest(req.Attachments),
+		UserAgent:       strings.TrimSpace(c.GetHeader("User-Agent")),
+		IPAddress:       c.ClientIP(),
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	response.Success(c, dto.OpenAIWebThreadMessageResponseFromService(result))
+}
+
+func openAIWebThreadAttachmentsFromRequest(items []SendOpenAIWebThreadAttachmentRequest) []service.OpenAIWebThreadMessageAttachment {
+	if len(items) == 0 {
+		return nil
+	}
+	out := make([]service.OpenAIWebThreadMessageAttachment, 0, len(items))
+	for i := range items {
+		item := items[i]
+		out = append(out, service.OpenAIWebThreadMessageAttachment{
+			FileName:    strings.TrimSpace(item.FileName),
+			ContentType: strings.TrimSpace(item.ContentType),
+			DataURL:     strings.TrimSpace(item.DataURL),
+			Width:       item.Width,
+			Height:      item.Height,
+		})
+	}
+	return out
 }

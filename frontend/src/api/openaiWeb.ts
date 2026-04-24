@@ -3,6 +3,8 @@ import type {
   OpenAIWebEntitlement,
   OpenAIWebThread,
   OpenAIWebThreadCreateRequest,
+  OpenAIWebThreadMessageRequest,
+  OpenAIWebThreadMessageResponse,
 } from '@/types'
 
 export async function getOpenAIWebEntitlements(): Promise<OpenAIWebEntitlement[]> {
@@ -31,10 +33,19 @@ export async function archiveOpenAIWebThread(localThreadID: string): Promise<voi
   await apiClient.post(`/openai-web/threads/${localThreadID}/archive`)
 }
 
+export async function sendOpenAIWebThreadMessage(
+  localThreadID: string,
+  payload: OpenAIWebThreadMessageRequest
+): Promise<OpenAIWebThreadMessageResponse> {
+  const response = await apiClient.post<OpenAIWebThreadMessageResponse>(`/openai-web/threads/${localThreadID}/messages`, payload)
+  return response.data
+}
+
 export default {
   getOpenAIWebEntitlements,
   getOpenAIWebThreads,
   getOpenAIWebThread,
   createOpenAIWebThread,
   archiveOpenAIWebThread,
+  sendOpenAIWebThreadMessage,
 }

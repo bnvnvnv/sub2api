@@ -122,7 +122,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	modelPricingResolver := service.NewModelPricingResolver(channelService, billingService)
 	balanceNotifyService := service.ProvideBalanceNotifyService(emailService, settingRepository, accountRepository)
 	openAIGatewayService := service.NewOpenAIGatewayService(accountRepository, usageLogRepository, usageBillingRepository, userRepository, userSubscriptionRepository, userGroupRateRepository, gatewayCache, configConfig, schedulerSnapshotService, concurrencyService, billingService, rateLimitService, billingCacheService, httpUpstream, deferredService, openAITokenProvider, modelPricingResolver, channelService, balanceNotifyService)
-	openAIWebThreadService := service.NewOpenAIWebThreadService(openAIWebThreadRepository, subscriptionService, accountRepository, openAIGatewayService)
+	openAIWebThreadService := service.NewOpenAIWebThreadService(openAIWebThreadRepository, apiKeyService, subscriptionService, apiKeyRepository, accountRepository, openAIGatewayService, openAIGatewayService)
 	openAIWebThreadHandler := handler.NewOpenAIWebThreadHandler(openAIWebThreadService)
 	announcementRepository := repository.NewAnnouncementRepository(client)
 	announcementReadRepository := repository.NewAnnouncementReadRepository(client)

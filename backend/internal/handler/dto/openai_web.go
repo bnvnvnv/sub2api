@@ -33,15 +33,43 @@ type OpenAIWebThread struct {
 }
 
 type OpenAIWebEntitlement struct {
-	GroupID         int64     `json:"group_id"`
-	GroupName       string    `json:"group_name"`
-	GroupDesc       string    `json:"group_desc"`
-	SubscriptionID  int64     `json:"subscription_id"`
-	HasWebChat      bool      `json:"has_web_chat"`
-	HasProAccounts  bool      `json:"has_pro_accounts"`
-	DefaultModel    string    `json:"default_model"`
-	CapabilityMode  string    `json:"capability_mode"`
-	SubscriptionEnd time.Time `json:"subscription_end"`
+	GroupID         int64      `json:"group_id"`
+	GroupName       string     `json:"group_name"`
+	GroupDesc       string     `json:"group_desc"`
+	AccessMode      string     `json:"access_mode"`
+	SubscriptionID  *int64     `json:"subscription_id,omitempty"`
+	HasWebChat      bool       `json:"has_web_chat"`
+	HasProAccounts  bool       `json:"has_pro_accounts"`
+	DefaultModel    string     `json:"default_model"`
+	CapabilityMode  string     `json:"capability_mode"`
+	SubscriptionEnd *time.Time `json:"subscription_end,omitempty"`
+}
+
+type OpenAIWebThreadMessageUsage struct {
+	InputTokens         int `json:"input_tokens"`
+	OutputTokens        int `json:"output_tokens"`
+	CacheReadTokens     int `json:"cache_read_tokens"`
+	CacheCreationTokens int `json:"cache_creation_tokens"`
+	ImageOutputTokens   int `json:"image_output_tokens"`
+	TotalTokens         int `json:"total_tokens"`
+}
+
+type OpenAIWebThreadMessageImage struct {
+	DataURL       string `json:"data_url,omitempty"`
+	MimeType      string `json:"mime_type,omitempty"`
+	RevisedPrompt string `json:"revised_prompt,omitempty"`
+	Width         int    `json:"width,omitempty"`
+	Height        int    `json:"height,omitempty"`
+}
+
+type OpenAIWebThreadMessageResponse struct {
+	Thread          *OpenAIWebThread              `json:"thread"`
+	AssistantText   string                        `json:"assistant_text"`
+	AssistantImages []OpenAIWebThreadMessageImage `json:"assistant_images,omitempty"`
+	RequestID       string                        `json:"request_id,omitempty"`
+	ResponseID      *string                       `json:"response_id,omitempty"`
+	Model           string                        `json:"model"`
+	Usage           OpenAIWebThreadMessageUsage   `json:"usage"`
 }
 
 type OpenAIWebGroupSummary struct {
@@ -143,12 +171,53 @@ func OpenAIWebEntitlementsFromService(entitlements []service.OpenAIWebThreadEnti
 			GroupID:         item.GroupID,
 			GroupName:       item.GroupName,
 			GroupDesc:       item.GroupDesc,
+			AccessMode:      item.AccessMode,
 			SubscriptionID:  item.SubscriptionID,
 			HasWebChat:      item.HasWebChat,
 			HasProAccounts:  item.HasProAccounts,
 			DefaultModel:    item.DefaultModel,
 			CapabilityMode:  item.CapabilityMode,
 			SubscriptionEnd: item.SubscriptionEnd,
+		})
+	}
+	return out
+}
+
+func OpenAIWebThreadMessageResponseFromService(result *service.OpenAIWebThreadMessageResult) *OpenAIWebThreadMessageResponse {
+	if result == nil {
+		return nil
+	}
+	return &OpenAIWebThreadMessageResponse{
+		Thread:          OpenAIWebThreadFromService(result.Thread),
+		AssistantText:   result.AssistantText,
+		AssistantImages: openAIWebThreadMessageImagesFromService(result.AssistantImages),
+		RequestID:       result.RequestID,
+		ResponseID:      result.ResponseID,
+		Model:           result.Model,
+		Usage: OpenAIWebThreadMessageUsage{
+			InputTokens:         result.Usage.InputTokens,
+			OutputTokens:        result.Usage.OutputTokens,
+			CacheReadTokens:     result.Usage.CacheReadTokens,
+			CacheCreationTokens: result.Usage.CacheCreationTokens,
+			ImageOutputTokens:   result.Usage.ImageOutputTokens,
+			TotalTokens:         result.Usage.TotalTokens,
+		},
+	}
+}
+
+func openAIWebThreadMessageImagesFromService(images []service.OpenAIWebThreadMessageImage) []OpenAIWebThreadMessageImage {
+	if len(images) == 0 {
+		return nil
+	}
+	out := make([]OpenAIWebThreadMessageImage, 0, len(images))
+	for i := range images {
+		item := images[i]
+		out = append(out, OpenAIWebThreadMessageImage{
+			DataURL:       item.DataURL,
+			MimeType:      item.MimeType,
+			RevisedPrompt: item.RevisedPrompt,
+			Width:         item.Width,
+			Height:        item.Height,
 		})
 	}
 	return out

@@ -110,6 +110,7 @@ func RegisterUserRoutes(
 			openAIWeb.GET("/threads", h.OpenAIWeb.ListThreads)
 			openAIWeb.POST("/threads", h.OpenAIWeb.CreateThread)
 			openAIWeb.GET("/threads/:id", h.OpenAIWeb.GetThread)
+			openAIWeb.POST("/threads/:id/messages", h.OpenAIWeb.SendThreadMessage)
 			openAIWeb.POST("/threads/:id/archive", h.OpenAIWeb.ArchiveThread)
 		}
 	}

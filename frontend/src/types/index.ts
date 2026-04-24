@@ -1412,12 +1412,13 @@ export interface OpenAIWebEntitlement {
   group_id: number
   group_name: string
   group_desc: string
-  subscription_id: number
+  access_mode: 'standard' | 'subscription' | string
+  subscription_id?: number | null
   has_web_chat: boolean
   has_pro_accounts: boolean
   default_model: string
   capability_mode: 'web_chat' | 'pro_model'
-  subscription_end: string
+  subscription_end?: string | null
 }
 
 export interface OpenAIWebGroupSummary {
@@ -1466,6 +1467,48 @@ export interface OpenAIWebThreadCreateRequest {
   requested_model?: string
   title?: string
   cache_policy?: 'local_only' | 'local_encrypted'
+}
+
+export interface OpenAIWebThreadMessageRequest {
+  content: string
+  requested_model?: string
+  reasoning_effort?: string
+  attachments?: OpenAIWebThreadMessageAttachment[]
+}
+
+export interface OpenAIWebThreadMessageUsage {
+  input_tokens: number
+  output_tokens: number
+  cache_read_tokens: number
+  cache_creation_tokens: number
+  image_output_tokens: number
+  total_tokens: number
+}
+
+export interface OpenAIWebThreadMessageImage {
+  data_url?: string
+  mime_type?: string
+  revised_prompt?: string
+  width?: number
+  height?: number
+}
+
+export interface OpenAIWebThreadMessageAttachment {
+  file_name?: string
+  content_type?: string
+  data_url: string
+  width?: number
+  height?: number
+}
+
+export interface OpenAIWebThreadMessageResponse {
+  thread: OpenAIWebThread
+  assistant_text: string
+  assistant_images?: OpenAIWebThreadMessageImage[]
+  request_id?: string
+  response_id?: string | null
+  model: string
+  usage: OpenAIWebThreadMessageUsage
 }
 
 export interface AssignSubscriptionRequest {
