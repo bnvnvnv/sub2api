@@ -428,6 +428,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
+import userChannelsAPI, { type UserAvailableChannel } from '@/api/channels'
 import openAIWebAPI from '@/api/openaiWeb'
 import { useAppStore } from '@/stores/app'
 import { extractApiErrorMessage } from '@/utils/apiError'
@@ -478,7 +479,7 @@ const OPENAI_WEB_DRAFT_COMPOSER_SETTINGS_STORAGE_KEY = 'openai-web-draft-compose
 const OPENAI_WEB_PREFERRED_GROUP_STORAGE_KEY = 'openai-web-preferred-group-id'
 const OPENAI_WEB_MAX_ATTACHMENT_COUNT = 4
 const OPENAI_WEB_MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024
-const OPENAI_WEB_BASE_MODELS = ['gpt-5.4-mini', 'gpt-5.4']
+const OPENAI_WEB_WEB_ONLY_PRO_MODELS = ['gpt-5.4-pro', 'gpt-5.5-pro']
 
 marked.setOptions({
   gfm: true,
@@ -493,6 +494,7 @@ const router = useRouter()
 const loading = ref(true)
 const sending = ref(false)
 const entitlements = ref<OpenAIWebEntitlement[]>([])
+const availableChannels = ref<UserAvailableChannel[]>([])
 const threads = ref<OpenAIWebThread[]>([])
 const threadMessages = ref<Record<string, OpenAIWebLocalMessage[]>>({})
 const archivingIds = ref<Set<string>>(new Set())
@@ -514,19 +516,10 @@ function openAIWebModelOptionsForEntitlement(
 ): string[] {
   const models = new Set<string>()
 
-  const defaultModel = entitlement?.default_model?.trim() || ''
-  if (defaultModel && (!modelNeedsPro(defaultModel) || entitlement?.has_pro_accounts)) {
-    models.add(defaultModel)
-  }
-  OPENAI_WEB_BASE_MODELS.forEach((model) => models.add(model))
-
-  const fallback = fallbackModel?.trim() || ''
-  if (entitlement?.has_pro_accounts || modelNeedsPro(fallback)) {
-    models.add('gpt-5.4-pro')
-  }
-  if (fallback) {
-    models.add(fallback)
-  }
+  addOpenAIWebChannelModels(models, entitlement?.group_id ? new Set([entitlement.group_id]) : undefined)
+  addModelOption(models, entitlement?.default_model)
+  addOpenAIWebOnlyProModels(models, entitlement)
+  addModelOption(models, fallbackModel)
 
   return Array.from(models)
 }
@@ -536,22 +529,21 @@ function openAIWebModelOptionsForDraft(
   fallbackModel?: string | null
 ): string[] {
   const models = new Set<string>()
+  const groupIDs = new Set(
+    items
+      .map((entitlement) => entitlement.group_id)
+      .filter((groupID) => Number.isFinite(groupID) && groupID > 0)
+  )
 
+  addOpenAIWebChannelModels(models, groupIDs)
   items.forEach((entitlement) => {
-    const defaultModel = entitlement.default_model?.trim() || ''
-    if (defaultModel && (!modelNeedsPro(defaultModel) || entitlement.has_pro_accounts)) {
-      models.add(defaultModel)
-    }
+    addModelOption(models, entitlement.default_model)
+    addOpenAIWebOnlyProModels(models, entitlement)
   })
-  OPENAI_WEB_BASE_MODELS.forEach((model) => models.add(model))
 
-  if (items.some((entitlement) => entitlement.has_pro_accounts)) {
-    models.add('gpt-5.4-pro')
-  }
-
-  const fallback = fallbackModel?.trim() || ''
-  if (fallback && !modelNeedsPro(fallback)) {
-    models.add(fallback)
+  const fallback = normalizeRequestedModel(fallbackModel)
+  if (fallback && (models.size === 0 || items.some((entitlement) => entitlementSupportsModel(entitlement, fallback)))) {
+    addModelOption(models, fallback)
   }
 
   return Array.from(models)
@@ -706,17 +698,27 @@ watch(
 
 async function loadAll() {
   try {
-    const [loadedEntitlements, loadedThreads] = await Promise.all([
+    const [loadedEntitlements, loadedThreads, loadedChannels] = await Promise.all([
       openAIWebAPI.getOpenAIWebEntitlements(),
       openAIWebAPI.getOpenAIWebThreads(),
+      loadAvailableChannels(),
     ])
 
     entitlements.value = loadedEntitlements
     threads.value = loadedThreads
+    availableChannels.value = loadedChannels
   } catch (err) {
     appStore.showError(extractApiErrorMessage(err, t('openAIWeb.failedToLoad')))
   } finally {
     loading.value = false
+  }
+}
+
+async function loadAvailableChannels(): Promise<UserAvailableChannel[]> {
+  try {
+    return await userChannelsAPI.getAvailable()
+  } catch {
+    return []
   }
 }
 
@@ -773,15 +775,108 @@ function normalizeRequestedModel(model: string | null | undefined): string {
   return (model ?? '').trim()
 }
 
+function isOpenAIPlatform(platform: string | null | undefined): boolean {
+  return (platform ?? '').trim().toLowerCase() === 'openai'
+}
+
+function addModelOption(models: Set<string>, model: string | null | undefined) {
+  const normalized = normalizeRequestedModel(model)
+  if (!normalized) {
+    return
+  }
+  models.add(normalized)
+}
+
+function addOpenAIWebChannelModels(models: Set<string>, allowedGroupIDs?: Set<number>) {
+  if (!allowedGroupIDs || allowedGroupIDs.size === 0) {
+    return
+  }
+
+  for (const channel of availableChannels.value) {
+    for (const section of channel.platforms ?? []) {
+      if (!isOpenAIPlatform(section.platform)) {
+        continue
+      }
+      if (!(section.groups ?? []).some((group) => allowedGroupIDs.has(group.id))) {
+        continue
+      }
+
+      for (const model of section.supported_models ?? []) {
+        if (!isOpenAIPlatform(model.platform)) {
+          continue
+        }
+        addModelOption(models, model.name)
+      }
+    }
+  }
+}
+
+function addOpenAIWebOnlyProModels(models: Set<string>, entitlement?: OpenAIWebEntitlement | null) {
+  if (!entitlement?.has_pro_accounts) {
+    return
+  }
+  OPENAI_WEB_WEB_ONLY_PRO_MODELS.forEach((model) => addModelOption(models, model))
+}
+
+function openAIWebChannelModelSetForGroup(groupID: number | null | undefined): Set<string> {
+  const models = new Set<string>()
+  if (typeof groupID !== 'number' || !Number.isFinite(groupID) || groupID <= 0) {
+    return models
+  }
+  addOpenAIWebChannelModels(models, new Set([groupID]))
+  return models
+}
+
+function hasOpenAIWebChannelModelsForEntitlements(): boolean {
+  const groupIDs = new Set(
+    entitlements.value
+      .map((entitlement) => entitlement.group_id)
+      .filter((groupID) => Number.isFinite(groupID) && groupID > 0)
+  )
+  const models = new Set<string>()
+  addOpenAIWebChannelModels(models, groupIDs)
+  return models.size > 0
+}
+
+function isOpenAIWebOnlyProModel(model: string | null | undefined): boolean {
+  const normalized = normalizeRequestedModel(model).toLowerCase()
+  return OPENAI_WEB_WEB_ONLY_PRO_MODELS.includes(normalized)
+}
+
+function entitlementSupportsOpenAIWebOnlyProModel(
+  entitlement: OpenAIWebEntitlement,
+  model: string | null | undefined
+): boolean {
+  return entitlement.has_pro_accounts && isOpenAIWebOnlyProModel(model)
+}
+
 function modelNeedsPro(model: string | null | undefined): boolean {
-  return normalizeRequestedModel(model).toLowerCase() === 'gpt-5.4-pro'
+  const normalized = normalizeRequestedModel(model).toLowerCase()
+  return normalized.includes('gpt-5.4-pro')
+    || normalized.includes('gpt-5.5-pro')
+    || normalized.includes('5-4-pro')
+    || normalized.includes('5-5-pro')
 }
 
 function entitlementSupportsModel(entitlement: OpenAIWebEntitlement | null | undefined, model: string | null | undefined): boolean {
   if (!entitlement) {
     return false
   }
-  if (!modelNeedsPro(model)) {
+  const requestedModel = normalizeRequestedModel(model)
+  if (!requestedModel) {
+    return true
+  }
+  const channelModels = openAIWebChannelModelSetForGroup(entitlement.group_id)
+  if (channelModels.size > 0) {
+    return channelModels.has(requestedModel) || entitlementSupportsOpenAIWebOnlyProModel(entitlement, requestedModel)
+  }
+  if (normalizeRequestedModel(entitlement.default_model) === requestedModel) {
+    return true
+  }
+  if (hasOpenAIWebChannelModelsForEntitlements()) {
+    return entitlementSupportsOpenAIWebOnlyProModel(entitlement, requestedModel)
+  }
+  if (!modelNeedsPro(requestedModel)) {
     return true
   }
   return entitlement.has_pro_accounts
@@ -828,8 +923,11 @@ function resolveDraftEntitlement(model?: string | null): OpenAIWebEntitlement | 
     return preferred
   }
 
-  if (modelNeedsPro(requestedModel)) {
-    return entitlements.value.find((item) => item.has_pro_accounts) ?? null
+  if (requestedModel) {
+    const matching = entitlements.value.find((item) => entitlementSupportsModel(item, requestedModel))
+    if (matching) {
+      return matching
+    }
   }
 
   return preferred ?? entitlements.value[0] ?? null
@@ -849,7 +947,7 @@ function resolveComposerRequestedModel(thread: OpenAIWebThread | null): string {
   if (draftEntitlement.value?.default_model?.trim()) {
     return draftEntitlement.value.default_model.trim()
   }
-  return composerModelOptions.value[0] || 'gpt-5.4-mini'
+  return composerModelOptions.value[0] || ''
 }
 
 function applyComposerSettingsForThread(thread: OpenAIWebThread | null) {
@@ -863,7 +961,7 @@ function applyComposerSettingsForThread(thread: OpenAIWebThread | null) {
   const defaultModel = thread.requested_model?.trim()
     || selectedThreadEntitlement.value?.default_model?.trim()
     || selectedThreadModelOptions.value[0]
-    || 'gpt-5.4-mini'
+    || ''
   const requestedModel = saved.requested_model?.trim() || defaultModel
   const availableModels = openAIWebModelOptionsForEntitlement(selectedThreadEntitlement.value, requestedModel)
 

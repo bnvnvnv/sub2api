@@ -1,9 +1,14 @@
 package service
 
 import (
+	"context"
+	"io"
+	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"github.com/tidwall/gjson"
 )
 
 func TestResolveOpenAIWebConversationStateIgnoresLegacySyntheticIDs(t *testing.T) {
@@ -156,4 +161,68 @@ func TestBuildOpenAIWebConversationRequestSupportsMixedTextAndImages(t *testing.
 	require.Equal(t, "file-123", attachments[0]["id"])
 	require.Equal(t, "reference.png", attachments[0]["name"])
 	require.Equal(t, "image/png", attachments[0]["mimeType"])
+}
+
+func TestForwardOpenAIWebMessageRoutesImageModelToResponsesTool(t *testing.T) {
+	sse := strings.Join([]string{
+		`data: {"type":"response.created","response":{"created_at":1710000001,"tools":[{"type":"image_generation","model":"gpt-image-2","output_format":"png","size":"1024x1024"}]}}`,
+		`data: {"type":"response.completed","response":{"created_at":1710000001,"usage":{"input_tokens":5,"output_tokens":9,"output_tokens_details":{"image_tokens":4}},"tools":[{"type":"image_generation","model":"gpt-image-2","output_format":"png","size":"1024x1024"}],"output":[{"type":"image_generation_call","result":"aGVsbG8=","revised_prompt":"a cute cat","output_format":"png"}]}}`,
+		`data: [DONE]`,
+		``,
+	}, "\n\n")
+	upstream := &httpUpstreamRecorder{
+		resp: &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     http.Header{"x-request-id": []string{"req_img_web"}},
+			Body:       io.NopCloser(strings.NewReader(sse)),
+		},
+	}
+	svc := &OpenAIGatewayService{httpUpstream: upstream}
+	account := &Account{
+		ID:       77,
+		Name:     "openai-web-oauth",
+		Platform: PlatformOpenAI,
+		Type:     AccountTypeOAuth,
+		Credentials: map[string]any{
+			"access_token":       "oauth-token",
+			"chatgpt_account_id": "acct-web",
+		},
+	}
+
+	result, err := svc.ForwardOpenAIWebMessage(context.Background(), &OpenAIWebForwardMessageInput{
+		Thread: &OpenAIWebThread{
+			PageSessionID:  "page-session-img",
+			RequestedModel: "gpt-image-2",
+		},
+		APIKey:  &APIKey{ID: 33},
+		Account: account,
+		Content: "draw a cute cat",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.NotNil(t, result.Result)
+	require.Equal(t, "gpt-image-2", result.Result.Model)
+	require.Equal(t, "gpt-image-2", result.Result.BillingModel)
+	require.Equal(t, 1, result.Result.ImageCount)
+	require.Equal(t, 5, result.Result.Usage.InputTokens)
+	require.Equal(t, 9, result.Result.Usage.OutputTokens)
+	require.Equal(t, 4, result.Result.Usage.ImageOutputTokens)
+	require.Equal(t, "/backend-api/codex/responses", result.UpstreamEndpoint)
+	require.Len(t, result.AssistantImages, 1)
+	require.Equal(t, "data:image/png;base64,aGVsbG8=", result.AssistantImages[0].DataURL)
+	require.Equal(t, "a cute cat", result.AssistantImages[0].RevisedPrompt)
+	require.Equal(t, 1024, result.AssistantImages[0].Width)
+	require.Equal(t, 1024, result.AssistantImages[0].Height)
+
+	require.NotNil(t, upstream.lastReq)
+	require.Equal(t, chatgptCodexURL, upstream.lastReq.URL.String())
+	require.Equal(t, "chatgpt.com", upstream.lastReq.Host)
+	require.Equal(t, "Bearer oauth-token", upstream.lastReq.Header.Get("Authorization"))
+	require.Equal(t, "acct-web", upstream.lastReq.Header.Get("chatgpt-account-id"))
+	require.Equal(t, "responses=experimental", upstream.lastReq.Header.Get("OpenAI-Beta"))
+	require.Equal(t, openAIImagesResponsesMainModel, gjson.GetBytes(upstream.lastBody, "model").String())
+	require.Equal(t, "image_generation", gjson.GetBytes(upstream.lastBody, "tools.0.type").String())
+	require.Equal(t, "generate", gjson.GetBytes(upstream.lastBody, "tools.0.action").String())
+	require.Equal(t, "gpt-image-2", gjson.GetBytes(upstream.lastBody, "tools.0.model").String())
+	require.Equal(t, "draw a cute cat", gjson.GetBytes(upstream.lastBody, "input.0.content.0.text").String())
 }

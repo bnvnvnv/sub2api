@@ -71,6 +71,9 @@ func (s *OpenAIGatewayService) ForwardOpenAIWebMessage(ctx context.Context, inpu
 	if model == "" {
 		model = defaultOpenAIWebRequestedModelForAccount(input.Account)
 	}
+	if isOpenAIImageGenerationModel(model) {
+		return s.forwardOpenAIWebImageMessage(ctx, input, model)
+	}
 	reasoningEffort := resolveOpenAIWebReasoningEffort(input.ReasoningEffort)
 
 	token, tokenType, err := s.GetAccessToken(ctx, input.Account)
@@ -226,9 +229,212 @@ func (s *OpenAIGatewayService) ForwardOpenAIWebMessage(ctx context.Context, inpu
 		AssistantImages:        append([]OpenAIWebThreadMessageImage(nil), resolvedTurn.AssistantImages...),
 		ResponseID:             resolvedTurn.ResponseID,
 		RequestPayloadHash:     HashUsageRequestPayload(requestBody),
+		UpstreamEndpoint:       "/backend-api/f/conversation",
 		UpstreamConversationID: upstreamConversationID,
 		UpstreamSessionID:      upstreamSessionID,
 	}, nil
+}
+
+func (s *OpenAIGatewayService) forwardOpenAIWebImageMessage(
+	ctx context.Context,
+	input *OpenAIWebForwardMessageInput,
+	model string,
+) (*OpenAIWebForwardMessageResult, error) {
+	if s.httpUpstream == nil {
+		return nil, ErrOpenAIWebGatewayUnavailable
+	}
+
+	requestModel := strings.TrimSpace(model)
+	if requestModel == "" {
+		requestModel = "gpt-image-2"
+	}
+	if err := validateOpenAIImagesModel(requestModel); err != nil {
+		return nil, err
+	}
+
+	token, tokenType, err := s.GetAccessToken(ctx, input.Account)
+	if err != nil {
+		return nil, err
+	}
+	if tokenType != "oauth" {
+		return nil, ErrOpenAIWebGatewayUnavailable
+	}
+
+	uploads, err := prepareOpenAIWebUploads(input.Attachments)
+	if err != nil {
+		return nil, err
+	}
+
+	prompt := strings.TrimSpace(input.Content)
+	if prompt == "" && len(uploads) > 0 {
+		prompt = "Edit this image."
+	}
+	endpoint := openAIImagesGenerationsEndpoint
+	if len(uploads) > 0 {
+		endpoint = openAIImagesEditsEndpoint
+	}
+	parsed := &OpenAIImagesRequest{
+		Endpoint:       endpoint,
+		ContentType:    "application/json",
+		Model:          requestModel,
+		ExplicitModel:  true,
+		Prompt:         prompt,
+		N:              1,
+		ResponseFormat: "b64_json",
+		OutputFormat:   "png",
+		Uploads:        uploads,
+	}
+	applyOpenAIImagesDefaults(parsed)
+	parsed.SizeTier = normalizeOpenAIImageSizeTier(parsed.Size)
+	parsed.RequiredCapability = classifyOpenAIImagesCapability(parsed)
+
+	requestBody, err := buildOpenAIImagesResponsesRequest(parsed, requestModel)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, chatgptCodexURL, bytes.NewReader(requestBody))
+	if err != nil {
+		return nil, err
+	}
+	req.Host = "chatgpt.com"
+	req.Header.Set("Authorization", "Bearer "+token)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "text/event-stream")
+	req.Header.Set("OpenAI-Beta", "responses=experimental")
+	req.Header.Set("originator", resolveOpenAIUpstreamOriginator(nil, false))
+	if customUA := strings.TrimSpace(input.Account.GetOpenAIUserAgent()); customUA != "" {
+		req.Header.Set("User-Agent", customUA)
+	} else {
+		req.Header.Set("User-Agent", codexCLIUserAgent)
+	}
+	if chatgptAccountID := strings.TrimSpace(input.Account.GetChatGPTAccountID()); chatgptAccountID != "" {
+		req.Header.Set("chatgpt-account-id", chatgptAccountID)
+	}
+
+	proxyURL := ""
+	if input.Account.ProxyID != nil && input.Account.Proxy != nil {
+		proxyURL = input.Account.Proxy.URL()
+	}
+
+	startTime := time.Now()
+	resp, err := s.httpUpstream.Do(req, proxyURL, input.Account.ID, input.Account.Concurrency)
+	if err != nil {
+		return nil, err
+	}
+	if resp == nil {
+		return nil, ErrOpenAIWebGatewayUnavailable
+	}
+	defer func() {
+		if resp.Body != nil {
+			_ = resp.Body.Close()
+		}
+	}()
+
+	if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
+		upstreamMsg := sanitizeUpstreamErrorMessage(extractUpstreamErrorMessage(body))
+		if upstreamMsg == "" {
+			upstreamMsg = fmt.Sprintf("openai web image request failed: status %d", resp.StatusCode)
+		}
+		statusErr := &openAIImageStatusError{
+			StatusCode:      resp.StatusCode,
+			Message:         upstreamMsg,
+			ResponseBody:    body,
+			ResponseHeaders: resp.Header.Clone(),
+			RequestID:       strings.TrimSpace(resp.Header.Get("x-request-id")),
+		}
+		if resp.Request != nil && resp.Request.URL != nil {
+			statusErr.URL = resp.Request.URL.String()
+		} else if req.URL != nil {
+			statusErr.URL = req.URL.String()
+		}
+		return nil, s.wrapOpenAIImageBackendError(ctx, nil, input.Account, statusErr)
+	}
+
+	body, err := ReadUpstreamResponseBody(resp.Body, s.cfg, nil, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var usage OpenAIUsage
+	for _, line := range bytes.Split(body, []byte("\n")) {
+		line = bytes.TrimRight(line, "\r")
+		data, ok := extractOpenAISSEDataLine(string(line))
+		if !ok || data == "" || data == "[DONE]" {
+			continue
+		}
+		s.parseSSEUsageBytes([]byte(data), &usage)
+	}
+
+	results, _, _, firstMeta, _, err := collectOpenAIImagesFromResponsesBody(body)
+	if err != nil {
+		return nil, err
+	}
+	if len(results) == 0 {
+		return nil, fmt.Errorf("upstream did not return image output")
+	}
+	if strings.TrimSpace(firstMeta.Model) == "" {
+		firstMeta.Model = requestModel
+	}
+	if strings.TrimSpace(firstMeta.Size) != "" {
+		parsed.SizeTier = normalizeOpenAIImageSizeTier(firstMeta.Size)
+	}
+
+	images := make([]OpenAIWebThreadMessageImage, 0, len(results))
+	for _, item := range results {
+		mergeOpenAIResponsesImageMeta(&item, firstMeta)
+		data := strings.TrimSpace(item.Result)
+		if data == "" {
+			continue
+		}
+		mimeType := openAIImageOutputMIMEType(item.OutputFormat)
+		width, height := openAIWebImageDimensionsFromSize(item.Size)
+		images = append(images, OpenAIWebThreadMessageImage{
+			DataURL:       "data:" + mimeType + ";base64," + data,
+			MimeType:      mimeType,
+			RevisedPrompt: strings.TrimSpace(item.RevisedPrompt),
+			Width:         width,
+			Height:        height,
+		})
+	}
+	if len(images) == 0 {
+		return nil, fmt.Errorf("upstream did not return image output")
+	}
+
+	result := &OpenAIForwardResult{
+		RequestID:     strings.TrimSpace(resp.Header.Get("x-request-id")),
+		Usage:         usage,
+		Model:         requestModel,
+		UpstreamModel: requestModel,
+		BillingModel:  requestModel,
+		Stream:        false,
+		Duration:      time.Since(startTime),
+		ImageCount:    len(images),
+		ImageSize:     parsed.SizeTier,
+	}
+
+	return &OpenAIWebForwardMessageResult{
+		Result:             result,
+		AssistantImages:    images,
+		RequestPayloadHash: HashUsageRequestPayload(requestBody),
+		UpstreamEndpoint:   "/backend-api/codex/responses",
+	}, nil
+}
+
+func openAIWebImageDimensionsFromSize(size string) (int, int) {
+	size = strings.TrimSpace(strings.ToLower(size))
+	if size == "" || !strings.Contains(size, "x") {
+		return 0, 0
+	}
+	var width, height int
+	if _, err := fmt.Sscanf(size, "%dx%d", &width, &height); err != nil {
+		return 0, 0
+	}
+	if width <= 0 || height <= 0 {
+		return 0, 0
+	}
+	return width, height
 }
 
 func prepareOpenAIWebConversation(

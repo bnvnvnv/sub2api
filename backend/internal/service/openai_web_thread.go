@@ -183,6 +183,7 @@ type OpenAIWebForwardMessageResult struct {
 	AssistantImages        []OpenAIWebThreadMessageImage
 	ResponseID             *string
 	RequestPayloadHash     string
+	UpstreamEndpoint       string
 	UpstreamConversationID *string
 	UpstreamSessionID      *string
 }

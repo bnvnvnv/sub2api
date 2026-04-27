@@ -297,6 +297,10 @@ func (s *OpenAIWebThreadService) SendUserThreadMessage(ctx context.Context, inpu
 	}
 
 	if forwarded.Result != nil {
+		upstreamEndpoint := strings.TrimSpace(forwarded.UpstreamEndpoint)
+		if upstreamEndpoint == "" {
+			upstreamEndpoint = "/backend-api/f/conversation"
+		}
 		if err := s.gateway.RecordUsage(ctx, &OpenAIRecordUsageInput{
 			Result:             forwarded.Result,
 			APIKey:             billingAPIKey,
@@ -304,7 +308,7 @@ func (s *OpenAIWebThreadService) SendUserThreadMessage(ctx context.Context, inpu
 			Account:            account,
 			Subscription:       subscription,
 			InboundEndpoint:    "/openai-web/threads/:id/messages",
-			UpstreamEndpoint:   "/backend-api/f/conversation",
+			UpstreamEndpoint:   upstreamEndpoint,
 			UserAgent:          input.UserAgent,
 			IPAddress:          input.IPAddress,
 			RequestPayloadHash: forwarded.RequestPayloadHash,

@@ -35,5 +35,10 @@ func isOpenAIWebProModel(requestedModel string) bool {
 	if model == "" {
 		return false
 	}
-	return strings.Contains(model, "5.4-pro") || strings.Contains(model, "5-4-pro") || strings.Contains(model, "gpt-5.4-pro")
+	return strings.Contains(model, "5.4-pro") ||
+		strings.Contains(model, "5-4-pro") ||
+		strings.Contains(model, "gpt-5.4-pro") ||
+		strings.Contains(model, "5.5-pro") ||
+		strings.Contains(model, "5-5-pro") ||
+		strings.Contains(model, "gpt-5.5-pro")
 }
