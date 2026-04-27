@@ -105,6 +105,11 @@ func ValidityDays(v int) predicate.RedeemCode {
 	return predicate.RedeemCode(sql.FieldEQ(FieldValidityDays, v))
 }
 
+// QuotaPeriod applies equality check predicate on the "quota_period" field. It's identical to QuotaPeriodEQ.
+func QuotaPeriod(v string) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldEQ(FieldQuotaPeriod, v))
+}
+
 // CodeEQ applies the EQ predicate on the "code" field.
 func CodeEQ(v string) predicate.RedeemCode {
 	return predicate.RedeemCode(sql.FieldEQ(FieldCode, v))
@@ -603,6 +608,71 @@ func ValidityDaysLT(v int) predicate.RedeemCode {
 // ValidityDaysLTE applies the LTE predicate on the "validity_days" field.
 func ValidityDaysLTE(v int) predicate.RedeemCode {
 	return predicate.RedeemCode(sql.FieldLTE(FieldValidityDays, v))
+}
+
+// QuotaPeriodEQ applies the EQ predicate on the "quota_period" field.
+func QuotaPeriodEQ(v string) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldEQ(FieldQuotaPeriod, v))
+}
+
+// QuotaPeriodNEQ applies the NEQ predicate on the "quota_period" field.
+func QuotaPeriodNEQ(v string) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldNEQ(FieldQuotaPeriod, v))
+}
+
+// QuotaPeriodIn applies the In predicate on the "quota_period" field.
+func QuotaPeriodIn(vs ...string) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldIn(FieldQuotaPeriod, vs...))
+}
+
+// QuotaPeriodNotIn applies the NotIn predicate on the "quota_period" field.
+func QuotaPeriodNotIn(vs ...string) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldNotIn(FieldQuotaPeriod, vs...))
+}
+
+// QuotaPeriodGT applies the GT predicate on the "quota_period" field.
+func QuotaPeriodGT(v string) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldGT(FieldQuotaPeriod, v))
+}
+
+// QuotaPeriodGTE applies the GTE predicate on the "quota_period" field.
+func QuotaPeriodGTE(v string) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldGTE(FieldQuotaPeriod, v))
+}
+
+// QuotaPeriodLT applies the LT predicate on the "quota_period" field.
+func QuotaPeriodLT(v string) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldLT(FieldQuotaPeriod, v))
+}
+
+// QuotaPeriodLTE applies the LTE predicate on the "quota_period" field.
+func QuotaPeriodLTE(v string) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldLTE(FieldQuotaPeriod, v))
+}
+
+// QuotaPeriodContains applies the Contains predicate on the "quota_period" field.
+func QuotaPeriodContains(v string) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldContains(FieldQuotaPeriod, v))
+}
+
+// QuotaPeriodHasPrefix applies the HasPrefix predicate on the "quota_period" field.
+func QuotaPeriodHasPrefix(v string) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldHasPrefix(FieldQuotaPeriod, v))
+}
+
+// QuotaPeriodHasSuffix applies the HasSuffix predicate on the "quota_period" field.
+func QuotaPeriodHasSuffix(v string) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldHasSuffix(FieldQuotaPeriod, v))
+}
+
+// QuotaPeriodEqualFold applies the EqualFold predicate on the "quota_period" field.
+func QuotaPeriodEqualFold(v string) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldEqualFold(FieldQuotaPeriod, v))
+}
+
+// QuotaPeriodContainsFold applies the ContainsFold predicate on the "quota_period" field.
+func QuotaPeriodContainsFold(v string) predicate.RedeemCode {
+	return predicate.RedeemCode(sql.FieldContainsFold(FieldQuotaPeriod, v))
 }
 
 // HasUser applies the HasEdge predicate on the "user" edge.

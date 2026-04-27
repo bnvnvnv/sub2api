@@ -35,6 +35,9 @@ func (r *userSubscriptionRepository) Create(ctx context.Context, sub *service.Us
 		SetDailyUsageUsd(sub.DailyUsageUSD).
 		SetWeeklyUsageUsd(sub.WeeklyUsageUSD).
 		SetMonthlyUsageUsd(sub.MonthlyUsageUSD).
+		SetDailyBonusUsd(sub.DailyBonusUSD).
+		SetWeeklyBonusUsd(sub.WeeklyBonusUSD).
+		SetMonthlyBonusUsd(sub.MonthlyBonusUSD).
 		SetNillableAssignedBy(sub.AssignedBy)
 
 	if sub.StartsAt.IsZero() {
@@ -119,6 +122,9 @@ func (r *userSubscriptionRepository) Update(ctx context.Context, sub *service.Us
 		SetDailyUsageUsd(sub.DailyUsageUSD).
 		SetWeeklyUsageUsd(sub.WeeklyUsageUSD).
 		SetMonthlyUsageUsd(sub.MonthlyUsageUSD).
+		SetDailyBonusUsd(sub.DailyBonusUSD).
+		SetWeeklyBonusUsd(sub.WeeklyBonusUSD).
+		SetMonthlyBonusUsd(sub.MonthlyBonusUSD).
 		SetNillableAssignedBy(sub.AssignedBy).
 		SetAssignedAt(sub.AssignedAt).
 		SetNotes(sub.Notes)
@@ -313,6 +319,7 @@ func (r *userSubscriptionRepository) ResetDailyUsage(ctx context.Context, id int
 	client := clientFromContext(ctx, r.client)
 	_, err := client.UserSubscription.UpdateOneID(id).
 		SetDailyUsageUsd(0).
+		SetDailyBonusUsd(0).
 		SetDailyWindowStart(newWindowStart).
 		Save(ctx)
 	return translatePersistenceError(err, service.ErrSubscriptionNotFound, nil)
@@ -322,6 +329,7 @@ func (r *userSubscriptionRepository) ResetWeeklyUsage(ctx context.Context, id in
 	client := clientFromContext(ctx, r.client)
 	_, err := client.UserSubscription.UpdateOneID(id).
 		SetWeeklyUsageUsd(0).
+		SetWeeklyBonusUsd(0).
 		SetWeeklyWindowStart(newWindowStart).
 		Save(ctx)
 	return translatePersistenceError(err, service.ErrSubscriptionNotFound, nil)
@@ -331,6 +339,7 @@ func (r *userSubscriptionRepository) ResetMonthlyUsage(ctx context.Context, id i
 	client := clientFromContext(ctx, r.client)
 	_, err := client.UserSubscription.UpdateOneID(id).
 		SetMonthlyUsageUsd(0).
+		SetMonthlyBonusUsd(0).
 		SetMonthlyWindowStart(newWindowStart).
 		Save(ctx)
 	return translatePersistenceError(err, service.ErrSubscriptionNotFound, nil)
@@ -442,6 +451,9 @@ func userSubscriptionEntityToService(m *dbent.UserSubscription) *service.UserSub
 		DailyUsageUSD:      m.DailyUsageUsd,
 		WeeklyUsageUSD:     m.WeeklyUsageUsd,
 		MonthlyUsageUSD:    m.MonthlyUsageUsd,
+		DailyBonusUSD:      m.DailyBonusUsd,
+		WeeklyBonusUSD:     m.WeeklyBonusUsd,
+		MonthlyBonusUSD:    m.MonthlyBonusUsd,
 		AssignedBy:         m.AssignedBy,
 		AssignedAt:         m.AssignedAt,
 		Notes:              derefString(m.Notes),

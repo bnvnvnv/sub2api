@@ -34,21 +34,23 @@ func NewRedeemHandler(adminService service.AdminService, redeemService *service.
 // GenerateRedeemCodesRequest represents generate redeem codes request
 type GenerateRedeemCodesRequest struct {
 	Count        int     `json:"count" binding:"required,min=1,max=100"`
-	Type         string  `json:"type" binding:"required,oneof=balance concurrency subscription invitation"`
+	Type         string  `json:"type" binding:"required,oneof=balance concurrency subscription subscription_quota invitation"`
 	Value        float64 `json:"value"`
 	GroupID      *int64  `json:"group_id"`      // 订阅类型必填
 	ValidityDays int     `json:"validity_days"` // 订阅类型使用，正数增加/负数退款扣减
+	QuotaPeriod  string  `json:"quota_period"`  // subscription_quota 类型使用：daily/weekly/monthly
 }
 
 // CreateAndRedeemCodeRequest represents creating a fixed code and redeeming it for a target user.
 // Type 为 omitempty 而非 required 是为了向后兼容旧版调用方（不传 type 时默认 balance）。
 type CreateAndRedeemCodeRequest struct {
 	Code         string  `json:"code" binding:"required,min=3,max=128"`
-	Type         string  `json:"type" binding:"omitempty,oneof=balance concurrency subscription invitation"` // 不传时默认 balance（向后兼容）
+	Type         string  `json:"type" binding:"omitempty,oneof=balance concurrency subscription subscription_quota invitation"` // 不传时默认 balance（向后兼容）
 	Value        float64 `json:"value" binding:"required"`
 	UserID       int64   `json:"user_id" binding:"required,gt=0"`
 	GroupID      *int64  `json:"group_id"`      // subscription 类型必填
 	ValidityDays int     `json:"validity_days"` // subscription 类型：正数增加，负数退款扣减
+	QuotaPeriod  string  `json:"quota_period"`  // subscription_quota 类型：daily/weekly/monthly
 	Notes        string  `json:"notes"`
 }
 
@@ -114,6 +116,7 @@ func (h *RedeemHandler) Generate(c *gin.Context) {
 			Value:        req.Value,
 			GroupID:      req.GroupID,
 			ValidityDays: req.ValidityDays,
+			QuotaPeriod:  req.QuotaPeriod,
 		})
 		if execErr != nil {
 			return nil, execErr
@@ -157,6 +160,20 @@ func (h *RedeemHandler) CreateAndRedeem(c *gin.Context) {
 			return
 		}
 	}
+	if req.Type == "subscription_quota" {
+		if req.GroupID == nil {
+			response.BadRequest(c, "group_id is required for subscription quota type")
+			return
+		}
+		if req.Value <= 0 {
+			response.BadRequest(c, "value must be greater than 0 for subscription quota type")
+			return
+		}
+		if _, err := service.NormalizeSubscriptionQuotaPeriod(req.QuotaPeriod); err != nil {
+			response.ErrorFrom(c, err)
+			return
+		}
+	}
 
 	executeAdminIdempotentJSON(c, "admin.redeem_codes.create_and_redeem", req, service.DefaultWriteIdempotencyTTL(), func(ctx context.Context) (any, error) {
 		existing, err := h.redeemService.GetByCode(ctx, req.Code)
@@ -175,6 +192,7 @@ func (h *RedeemHandler) CreateAndRedeem(c *gin.Context) {
 			Notes:        req.Notes,
 			GroupID:      req.GroupID,
 			ValidityDays: req.ValidityDays,
+			QuotaPeriod:  req.QuotaPeriod,
 		})
 		if createErr != nil {
 			// Unique code race: if code now exists, use idempotent semantics by used_by.

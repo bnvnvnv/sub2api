@@ -32,6 +32,9 @@ type subscriptionCacheData struct {
 	DailyUsage   float64
 	WeeklyUsage  float64
 	MonthlyUsage float64
+	DailyBonus   float64
+	WeeklyBonus  float64
+	MonthlyBonus float64
 	Version      int64
 }
 
@@ -425,6 +428,9 @@ func (s *BillingCacheService) convertFromPortsData(data *SubscriptionCacheData) 
 		DailyUsage:   data.DailyUsage,
 		WeeklyUsage:  data.WeeklyUsage,
 		MonthlyUsage: data.MonthlyUsage,
+		DailyBonus:   data.DailyBonus,
+		WeeklyBonus:  data.WeeklyBonus,
+		MonthlyBonus: data.MonthlyBonus,
 		Version:      data.Version,
 	}
 }
@@ -436,6 +442,9 @@ func (s *BillingCacheService) convertToPortsData(data *subscriptionCacheData) *S
 		DailyUsage:   data.DailyUsage,
 		WeeklyUsage:  data.WeeklyUsage,
 		MonthlyUsage: data.MonthlyUsage,
+		DailyBonus:   data.DailyBonus,
+		WeeklyBonus:  data.WeeklyBonus,
+		MonthlyBonus: data.MonthlyBonus,
 		Version:      data.Version,
 	}
 }
@@ -453,6 +462,9 @@ func (s *BillingCacheService) getSubscriptionFromDB(ctx context.Context, userID,
 		DailyUsage:   sub.DailyUsageUSD,
 		WeeklyUsage:  sub.WeeklyUsageUSD,
 		MonthlyUsage: sub.MonthlyUsageUSD,
+		DailyBonus:   sub.DailyBonusUSD,
+		WeeklyBonus:  sub.WeeklyBonusUSD,
+		MonthlyBonus: sub.MonthlyBonusUSD,
 		Version:      sub.UpdatedAt.Unix(),
 	}, nil
 }
@@ -818,15 +830,15 @@ func (s *BillingCacheService) checkSubscriptionEligibility(ctx context.Context, 
 	}
 
 	// 检查限额（使用传入的Group限额配置）
-	if group.HasDailyLimit() && subData.DailyUsage >= *group.DailyLimitUSD {
+	if dailyLimit := effectiveSubscriptionLimit(group.DailyLimitUSD, subData.DailyBonus); dailyLimit != nil && subData.DailyUsage >= *dailyLimit {
 		return ErrDailyLimitExceeded
 	}
 
-	if group.HasWeeklyLimit() && subData.WeeklyUsage >= *group.WeeklyLimitUSD {
+	if weeklyLimit := effectiveSubscriptionLimit(group.WeeklyLimitUSD, subData.WeeklyBonus); weeklyLimit != nil && subData.WeeklyUsage >= *weeklyLimit {
 		return ErrWeeklyLimitExceeded
 	}
 
-	if group.HasMonthlyLimit() && subData.MonthlyUsage >= *group.MonthlyLimitUSD {
+	if monthlyLimit := effectiveSubscriptionLimit(group.MonthlyLimitUSD, subData.MonthlyBonus); monthlyLimit != nil && subData.MonthlyUsage >= *monthlyLimit {
 		return ErrMonthlyLimitExceeded
 	}
 

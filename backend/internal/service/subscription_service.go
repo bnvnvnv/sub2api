@@ -25,18 +25,19 @@ var MaxExpiresAt = time.Date(2099, 12, 31, 23, 59, 59, 0, time.UTC)
 const MaxValidityDays = 36500
 
 var (
-	ErrSubscriptionNotFound       = infraerrors.NotFound("SUBSCRIPTION_NOT_FOUND", "subscription not found")
-	ErrSubscriptionExpired        = infraerrors.Forbidden("SUBSCRIPTION_EXPIRED", "subscription has expired")
-	ErrSubscriptionSuspended      = infraerrors.Forbidden("SUBSCRIPTION_SUSPENDED", "subscription is suspended")
-	ErrSubscriptionAlreadyExists  = infraerrors.Conflict("SUBSCRIPTION_ALREADY_EXISTS", "subscription already exists for this user and group")
-	ErrSubscriptionAssignConflict = infraerrors.Conflict("SUBSCRIPTION_ASSIGN_CONFLICT", "subscription exists but request conflicts with existing assignment semantics")
-	ErrGroupNotSubscriptionType   = infraerrors.BadRequest("GROUP_NOT_SUBSCRIPTION_TYPE", "group is not a subscription type")
-	ErrInvalidInput               = infraerrors.BadRequest("INVALID_INPUT", "at least one of resetDaily, resetWeekly, or resetMonthly must be true")
-	ErrDailyLimitExceeded         = infraerrors.TooManyRequests("DAILY_LIMIT_EXCEEDED", "daily usage limit exceeded")
-	ErrWeeklyLimitExceeded        = infraerrors.TooManyRequests("WEEKLY_LIMIT_EXCEEDED", "weekly usage limit exceeded")
-	ErrMonthlyLimitExceeded       = infraerrors.TooManyRequests("MONTHLY_LIMIT_EXCEEDED", "monthly usage limit exceeded")
-	ErrSubscriptionNilInput       = infraerrors.BadRequest("SUBSCRIPTION_NIL_INPUT", "subscription input cannot be nil")
-	ErrAdjustWouldExpire          = infraerrors.BadRequest("ADJUST_WOULD_EXPIRE", "adjustment would result in expired subscription (remaining days must be > 0)")
+	ErrSubscriptionNotFound           = infraerrors.NotFound("SUBSCRIPTION_NOT_FOUND", "subscription not found")
+	ErrSubscriptionExpired            = infraerrors.Forbidden("SUBSCRIPTION_EXPIRED", "subscription has expired")
+	ErrSubscriptionSuspended          = infraerrors.Forbidden("SUBSCRIPTION_SUSPENDED", "subscription is suspended")
+	ErrSubscriptionAlreadyExists      = infraerrors.Conflict("SUBSCRIPTION_ALREADY_EXISTS", "subscription already exists for this user and group")
+	ErrSubscriptionAssignConflict     = infraerrors.Conflict("SUBSCRIPTION_ASSIGN_CONFLICT", "subscription exists but request conflicts with existing assignment semantics")
+	ErrGroupNotSubscriptionType       = infraerrors.BadRequest("GROUP_NOT_SUBSCRIPTION_TYPE", "group is not a subscription type")
+	ErrInvalidInput                   = infraerrors.BadRequest("INVALID_INPUT", "at least one of resetDaily, resetWeekly, or resetMonthly must be true")
+	ErrDailyLimitExceeded             = infraerrors.TooManyRequests("DAILY_LIMIT_EXCEEDED", "daily usage limit exceeded")
+	ErrWeeklyLimitExceeded            = infraerrors.TooManyRequests("WEEKLY_LIMIT_EXCEEDED", "weekly usage limit exceeded")
+	ErrMonthlyLimitExceeded           = infraerrors.TooManyRequests("MONTHLY_LIMIT_EXCEEDED", "monthly usage limit exceeded")
+	ErrSubscriptionNilInput           = infraerrors.BadRequest("SUBSCRIPTION_NIL_INPUT", "subscription input cannot be nil")
+	ErrAdjustWouldExpire              = infraerrors.BadRequest("ADJUST_WOULD_EXPIRE", "adjustment would result in expired subscription (remaining days must be > 0)")
+	ErrInvalidSubscriptionQuotaPeriod = infraerrors.BadRequest("INVALID_SUBSCRIPTION_QUOTA_PERIOD", "quota_period must be daily, weekly, or monthly")
 )
 
 // SubscriptionService 订阅服务
@@ -654,16 +655,19 @@ func normalizeExpiredWindows(subs []UserSubscription) {
 		if sub.NeedsDailyReset() {
 			sub.DailyWindowStart = nil
 			sub.DailyUsageUSD = 0
+			sub.DailyBonusUSD = 0
 		}
 		// 周窗口过期：清零展示数据
 		if sub.NeedsWeeklyReset() {
 			sub.WeeklyWindowStart = nil
 			sub.WeeklyUsageUSD = 0
+			sub.WeeklyBonusUSD = 0
 		}
 		// 月窗口过期：清零展示数据
 		if sub.NeedsMonthlyReset() {
 			sub.MonthlyWindowStart = nil
 			sub.MonthlyUsageUSD = 0
+			sub.MonthlyBonusUSD = 0
 		}
 	}
 }
@@ -749,6 +753,7 @@ func (s *SubscriptionService) CheckAndResetWindows(ctx context.Context, sub *Use
 		}
 		sub.DailyWindowStart = &windowStart
 		sub.DailyUsageUSD = 0
+		sub.DailyBonusUSD = 0
 		needsInvalidateCache = true
 	}
 
@@ -759,6 +764,7 @@ func (s *SubscriptionService) CheckAndResetWindows(ctx context.Context, sub *Use
 		}
 		sub.WeeklyWindowStart = &windowStart
 		sub.WeeklyUsageUSD = 0
+		sub.WeeklyBonusUSD = 0
 		needsInvalidateCache = true
 	}
 
@@ -769,6 +775,7 @@ func (s *SubscriptionService) CheckAndResetWindows(ctx context.Context, sub *Use
 		}
 		sub.MonthlyWindowStart = &windowStart
 		sub.MonthlyUsageUSD = 0
+		sub.MonthlyBonusUSD = 0
 		needsInvalidateCache = true
 	}
 
@@ -817,14 +824,17 @@ func (s *SubscriptionService) ValidateAndCheckLimits(sub *UserSubscription, grou
 	//    实际的 DB 窗口重置由 DoWindowMaintenance 异步完成
 	if sub.NeedsDailyReset() {
 		sub.DailyUsageUSD = 0
+		sub.DailyBonusUSD = 0
 		needsMaintenance = true
 	}
 	if sub.NeedsWeeklyReset() {
 		sub.WeeklyUsageUSD = 0
+		sub.WeeklyBonusUSD = 0
 		needsMaintenance = true
 	}
 	if sub.NeedsMonthlyReset() {
 		sub.MonthlyUsageUSD = 0
+		sub.MonthlyBonusUSD = 0
 		needsMaintenance = true
 	}
 	if !sub.IsWindowActivated() {
@@ -943,7 +953,7 @@ func (s *SubscriptionService) calculateProgress(sub *UserSubscription, group *Gr
 
 	// 日进度
 	if group.HasDailyLimit() && sub.DailyWindowStart != nil {
-		limit := *group.DailyLimitUSD
+		limit := *sub.EffectiveDailyLimitUSD(group)
 		resetsAt := sub.DailyWindowStart.Add(24 * time.Hour)
 		progress.Daily = &UsageWindowProgress{
 			LimitUSD:        limit,
@@ -967,7 +977,7 @@ func (s *SubscriptionService) calculateProgress(sub *UserSubscription, group *Gr
 
 	// 周进度
 	if group.HasWeeklyLimit() && sub.WeeklyWindowStart != nil {
-		limit := *group.WeeklyLimitUSD
+		limit := *sub.EffectiveWeeklyLimitUSD(group)
 		resetsAt := sub.WeeklyWindowStart.Add(7 * 24 * time.Hour)
 		progress.Weekly = &UsageWindowProgress{
 			LimitUSD:        limit,
@@ -991,7 +1001,7 @@ func (s *SubscriptionService) calculateProgress(sub *UserSubscription, group *Gr
 
 	// 月进度
 	if group.HasMonthlyLimit() && sub.MonthlyWindowStart != nil {
-		limit := *group.MonthlyLimitUSD
+		limit := *sub.EffectiveMonthlyLimitUSD(group)
 		resetsAt := sub.MonthlyWindowStart.Add(30 * 24 * time.Hour)
 		progress.Monthly = &UsageWindowProgress{
 			LimitUSD:        limit,

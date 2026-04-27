@@ -588,6 +588,7 @@ func redeemCodeFromServiceBase(rc *service.RedeemCode) RedeemCode {
 		CreatedAt:    rc.CreatedAt,
 		GroupID:      rc.GroupID,
 		ValidityDays: rc.ValidityDays,
+		QuotaPeriod:  rc.QuotaPeriod,
 		User:         UserFromServiceShallow(rc.User),
 		Group:        GroupFromServiceShallow(rc.Group),
 	}
@@ -784,6 +785,9 @@ func userSubscriptionFromServiceBase(sub *service.UserSubscription) UserSubscrip
 		DailyUsageUSD:      sub.DailyUsageUSD,
 		WeeklyUsageUSD:     sub.WeeklyUsageUSD,
 		MonthlyUsageUSD:    sub.MonthlyUsageUSD,
+		DailyBonusUSD:      sub.DailyBonusUSD,
+		WeeklyBonusUSD:     sub.WeeklyBonusUSD,
+		MonthlyBonusUSD:    sub.MonthlyBonusUSD,
 		CreatedAt:          sub.CreatedAt,
 		UpdatedAt:          sub.UpdatedAt,
 		User:               UserFromServiceShallow(sub.User),

@@ -1085,7 +1085,8 @@ export interface AdminDataImportResult {
 
 // ==================== Usage & Redeem Types ====================
 
-export type RedeemCodeType = 'balance' | 'concurrency' | 'subscription' | 'invitation'
+export type RedeemCodeType = 'balance' | 'concurrency' | 'subscription' | 'subscription_quota' | 'invitation'
+export type SubscriptionQuotaPeriod = 'daily' | 'weekly' | 'monthly'
 export type UsageRequestType = 'unknown' | 'sync' | 'stream' | 'ws_v2'
 
 export interface UsageLog {
@@ -1212,6 +1213,7 @@ export interface RedeemCode {
   updated_at?: string
   group_id?: number | null // 订阅类型专用
   validity_days?: number // 订阅类型专用
+  quota_period?: SubscriptionQuotaPeriod | '' // 订阅临时额度类型专用
   user?: User
   group?: Group // 关联的分组
 }
@@ -1222,6 +1224,7 @@ export interface GenerateRedeemCodesRequest {
   value: number
   group_id?: number | null // 订阅类型专用
   validity_days?: number // 订阅类型专用
+  quota_period?: SubscriptionQuotaPeriod // 订阅临时额度类型专用
 }
 
 export interface RedeemCodeRequest {
@@ -1417,6 +1420,9 @@ export interface UserSubscription {
   daily_usage_usd: number
   weekly_usage_usd: number
   monthly_usage_usd: number
+  daily_bonus_usd: number
+  weekly_bonus_usd: number
+  monthly_bonus_usd: number
   daily_window_start: string | null
   weekly_window_start: string | null
   monthly_window_start: string | null

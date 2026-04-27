@@ -68,6 +68,9 @@ func (RedeemCode) Fields() []ent.Field {
 			Nillable(),
 		field.Int("validity_days").
 			Default(30),
+		field.String("quota_period").
+			MaxLen(20).
+			Default(""),
 	}
 }
 

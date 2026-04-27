@@ -335,6 +335,7 @@ type RedeemCode struct {
 
 	GroupID      *int64 `json:"group_id"`
 	ValidityDays int    `json:"validity_days"`
+	QuotaPeriod  string `json:"quota_period"`
 
 	// Notes is only populated for admin_balance/admin_concurrency types
 	// so users can see why they were charged or credited
@@ -503,6 +504,9 @@ type UserSubscription struct {
 	DailyUsageUSD   float64 `json:"daily_usage_usd"`
 	WeeklyUsageUSD  float64 `json:"weekly_usage_usd"`
 	MonthlyUsageUSD float64 `json:"monthly_usage_usd"`
+	DailyBonusUSD   float64 `json:"daily_bonus_usd"`
+	WeeklyBonusUSD  float64 `json:"weekly_bonus_usd"`
+	MonthlyBonusUSD float64 `json:"monthly_bonus_usd"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`

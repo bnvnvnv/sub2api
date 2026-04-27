@@ -1377,6 +1377,12 @@ func init() {
 	redeemcodeDescValidityDays := redeemcodeFields[9].Descriptor()
 	// redeemcode.DefaultValidityDays holds the default value on creation for the validity_days field.
 	redeemcode.DefaultValidityDays = redeemcodeDescValidityDays.Default.(int)
+	// redeemcodeDescQuotaPeriod is the schema descriptor for quota_period field.
+	redeemcodeDescQuotaPeriod := redeemcodeFields[10].Descriptor()
+	// redeemcode.DefaultQuotaPeriod holds the default value on creation for the quota_period field.
+	redeemcode.DefaultQuotaPeriod = redeemcodeDescQuotaPeriod.Default.(string)
+	// redeemcode.QuotaPeriodValidator is a validator for the "quota_period" field. It is called by the builders before save.
+	redeemcode.QuotaPeriodValidator = redeemcodeDescQuotaPeriod.Validators[0].(func(string) error)
 	securitysecretMixin := schema.SecuritySecret{}.Mixin()
 	securitysecretMixinFields0 := securitysecretMixin[0].Fields()
 	_ = securitysecretMixinFields0
@@ -1998,8 +2004,20 @@ func init() {
 	usersubscriptionDescMonthlyUsageUsd := usersubscriptionFields[10].Descriptor()
 	// usersubscription.DefaultMonthlyUsageUsd holds the default value on creation for the monthly_usage_usd field.
 	usersubscription.DefaultMonthlyUsageUsd = usersubscriptionDescMonthlyUsageUsd.Default.(float64)
+	// usersubscriptionDescDailyBonusUsd is the schema descriptor for daily_bonus_usd field.
+	usersubscriptionDescDailyBonusUsd := usersubscriptionFields[11].Descriptor()
+	// usersubscription.DefaultDailyBonusUsd holds the default value on creation for the daily_bonus_usd field.
+	usersubscription.DefaultDailyBonusUsd = usersubscriptionDescDailyBonusUsd.Default.(float64)
+	// usersubscriptionDescWeeklyBonusUsd is the schema descriptor for weekly_bonus_usd field.
+	usersubscriptionDescWeeklyBonusUsd := usersubscriptionFields[12].Descriptor()
+	// usersubscription.DefaultWeeklyBonusUsd holds the default value on creation for the weekly_bonus_usd field.
+	usersubscription.DefaultWeeklyBonusUsd = usersubscriptionDescWeeklyBonusUsd.Default.(float64)
+	// usersubscriptionDescMonthlyBonusUsd is the schema descriptor for monthly_bonus_usd field.
+	usersubscriptionDescMonthlyBonusUsd := usersubscriptionFields[13].Descriptor()
+	// usersubscription.DefaultMonthlyBonusUsd holds the default value on creation for the monthly_bonus_usd field.
+	usersubscription.DefaultMonthlyBonusUsd = usersubscriptionDescMonthlyBonusUsd.Default.(float64)
 	// usersubscriptionDescAssignedAt is the schema descriptor for assigned_at field.
-	usersubscriptionDescAssignedAt := usersubscriptionFields[12].Descriptor()
+	usersubscriptionDescAssignedAt := usersubscriptionFields[15].Descriptor()
 	// usersubscription.DefaultAssignedAt holds the default value on creation for the assigned_at field.
 	usersubscription.DefaultAssignedAt = usersubscriptionDescAssignedAt.Default.(func() time.Time)
 }

@@ -50,10 +50,11 @@ const (
 
 // Redeem type constants
 const (
-	RedeemTypeBalance      = domain.RedeemTypeBalance
-	RedeemTypeConcurrency  = domain.RedeemTypeConcurrency
-	RedeemTypeSubscription = domain.RedeemTypeSubscription
-	RedeemTypeInvitation   = domain.RedeemTypeInvitation
+	RedeemTypeBalance           = domain.RedeemTypeBalance
+	RedeemTypeConcurrency       = domain.RedeemTypeConcurrency
+	RedeemTypeSubscription      = domain.RedeemTypeSubscription
+	RedeemTypeSubscriptionQuota = domain.RedeemTypeSubscriptionQuota
+	RedeemTypeInvitation        = domain.RedeemTypeInvitation
 )
 
 // PromoCode status constants
