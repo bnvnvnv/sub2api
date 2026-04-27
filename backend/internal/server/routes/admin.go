@@ -266,10 +266,6 @@ func registerAccountRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		accounts.POST("/check-mixed-channel", h.Admin.Account.CheckMixedChannel)
 		accounts.POST("/sync/crs", h.Admin.Account.SyncFromCRS)
 		accounts.POST("/sync/crs/preview", h.Admin.Account.PreviewFromCRS)
-		accounts.POST("/import/cpa/remote", h.Admin.Account.ImportRemoteFromCPA)
-		accounts.POST("/import/cpa/remote/preview", h.Admin.Account.PreviewRemoteFromCPA)
-		accounts.POST("/import/cpa", h.Admin.Account.ImportFromCPA)
-		accounts.POST("/import/cpa/preview", h.Admin.Account.PreviewFromCPA)
 		accounts.PUT("/:id", h.Admin.Account.Update)
 		accounts.DELETE("/:id", h.Admin.Account.Delete)
 		accounts.POST("/:id/test", h.Admin.Account.Test)
@@ -358,7 +354,6 @@ func registerProxyRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		proxies.GET("/all", h.Admin.Proxy.GetAll)
 		proxies.GET("/data", h.Admin.Proxy.ExportData)
 		proxies.POST("/data", h.Admin.Proxy.ImportData)
-		proxies.POST("/subscription/parse", h.Admin.Proxy.ParseSubscription)
 		proxies.GET("/:id", h.Admin.Proxy.GetByID)
 		proxies.POST("", h.Admin.Proxy.Create)
 		proxies.PUT("/:id", h.Admin.Proxy.Update)
@@ -614,7 +609,6 @@ func registerAffiliateRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 			users.POST("/batch-rate", h.Admin.Affiliate.BatchSetRate)
 			users.PUT("/:user_id", h.Admin.Affiliate.UpdateUserSettings)
 			users.DELETE("/:user_id", h.Admin.Affiliate.ClearUserSettings)
-			users.POST("/:user_id/reset-code", h.Admin.Affiliate.ResetUserCode)
 		}
 	}
 }
