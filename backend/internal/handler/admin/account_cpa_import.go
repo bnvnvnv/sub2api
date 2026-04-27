@@ -8,6 +8,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type CPAImportHandler struct {
+	cpaImportService *service.CPAImportService
+}
+
+func NewCPAImportHandler(cpaImportService *service.CPAImportService) *CPAImportHandler {
+	return &CPAImportHandler{
+		cpaImportService: cpaImportService,
+	}
+}
+
 type PreviewFromCPARequest struct {
 	FileName string `json:"file_name" binding:"required"`
 	RawJSON  string `json:"raw_json" binding:"required"`
@@ -39,7 +49,7 @@ type ImportRemoteFromCPARequest struct {
 
 // PreviewFromCPA parses a CPA auth file and returns the target account mapping.
 // POST /api/v1/admin/accounts/import/cpa/preview
-func (h *AccountHandler) PreviewFromCPA(c *gin.Context) {
+func (h *CPAImportHandler) PreviewFromCPA(c *gin.Context) {
 	var req PreviewFromCPARequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, "Invalid request: "+err.Error())
@@ -63,7 +73,7 @@ func (h *AccountHandler) PreviewFromCPA(c *gin.Context) {
 
 // ImportFromCPA imports a CPA auth file as a sub2api account.
 // POST /api/v1/admin/accounts/import/cpa
-func (h *AccountHandler) ImportFromCPA(c *gin.Context) {
+func (h *CPAImportHandler) ImportFromCPA(c *gin.Context) {
 	var req ImportFromCPARequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, "Invalid request: "+err.Error())
@@ -93,7 +103,7 @@ func (h *AccountHandler) ImportFromCPA(c *gin.Context) {
 
 // PreviewRemoteFromCPA fetches active auth files from a CPA instance and returns importable accounts.
 // POST /api/v1/admin/accounts/import/cpa/remote/preview
-func (h *AccountHandler) PreviewRemoteFromCPA(c *gin.Context) {
+func (h *CPAImportHandler) PreviewRemoteFromCPA(c *gin.Context) {
 	var req PreviewRemoteFromCPARequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, "Invalid request: "+err.Error())
@@ -117,7 +127,7 @@ func (h *AccountHandler) PreviewRemoteFromCPA(c *gin.Context) {
 
 // ImportRemoteFromCPA imports selected active auth files from a CPA instance.
 // POST /api/v1/admin/accounts/import/cpa/remote
-func (h *AccountHandler) ImportRemoteFromCPA(c *gin.Context) {
+func (h *CPAImportHandler) ImportRemoteFromCPA(c *gin.Context) {
 	var req ImportRemoteFromCPARequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, "Invalid request: "+err.Error())

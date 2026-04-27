@@ -77,8 +77,6 @@ const (
 	EdgeProxy = "proxy"
 	// EdgeUsageLogs holds the string denoting the usage_logs edge name in mutations.
 	EdgeUsageLogs = "usage_logs"
-	// EdgeOpenaiWebThreads holds the string denoting the openai_web_threads edge name in mutations.
-	EdgeOpenaiWebThreads = "openai_web_threads"
 	// EdgeAccountGroups holds the string denoting the account_groups edge name in mutations.
 	EdgeAccountGroups = "account_groups"
 	// Table holds the table name of the account in the database.
@@ -102,13 +100,6 @@ const (
 	UsageLogsInverseTable = "usage_logs"
 	// UsageLogsColumn is the table column denoting the usage_logs relation/edge.
 	UsageLogsColumn = "account_id"
-	// OpenaiWebThreadsTable is the table that holds the openai_web_threads relation/edge.
-	OpenaiWebThreadsTable = "openai_web_threads"
-	// OpenaiWebThreadsInverseTable is the table name for the OpenAIWebThread entity.
-	// It exists in this package in order to avoid circular dependency with the "openaiwebthread" package.
-	OpenaiWebThreadsInverseTable = "openai_web_threads"
-	// OpenaiWebThreadsColumn is the table column denoting the openai_web_threads relation/edge.
-	OpenaiWebThreadsColumn = "account_id"
 	// AccountGroupsTable is the table that holds the account_groups relation/edge.
 	AccountGroupsTable = "account_groups"
 	// AccountGroupsInverseTable is the table name for the AccountGroup entity.
@@ -382,20 +373,6 @@ func ByUsageLogs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
-// ByOpenaiWebThreadsCount orders the results by openai_web_threads count.
-func ByOpenaiWebThreadsCount(opts ...sql.OrderTermOption) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborsCount(s, newOpenaiWebThreadsStep(), opts...)
-	}
-}
-
-// ByOpenaiWebThreads orders the results by openai_web_threads terms.
-func ByOpenaiWebThreads(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
-	return func(s *sql.Selector) {
-		sqlgraph.OrderByNeighborTerms(s, newOpenaiWebThreadsStep(), append([]sql.OrderTerm{term}, terms...)...)
-	}
-}
-
 // ByAccountGroupsCount orders the results by account_groups count.
 func ByAccountGroupsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -428,13 +405,6 @@ func newUsageLogsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(UsageLogsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, UsageLogsTable, UsageLogsColumn),
-	)
-}
-func newOpenaiWebThreadsStep() *sqlgraph.Step {
-	return sqlgraph.NewStep(
-		sqlgraph.From(Table, FieldID),
-		sqlgraph.To(OpenaiWebThreadsInverseTable, FieldID),
-		sqlgraph.Edge(sqlgraph.O2M, false, OpenaiWebThreadsTable, OpenaiWebThreadsColumn),
 	)
 }
 func newAccountGroupsStep() *sqlgraph.Step {

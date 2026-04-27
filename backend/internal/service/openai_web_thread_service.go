@@ -431,20 +431,6 @@ func resolveOpenAIWebReasoningEffort(raw string) string {
 	return normalizeOpenAIReasoningEffort(raw)
 }
 
-func defaultOpenAIWebRequestedModel(hasProAccounts bool) string {
-	if hasProAccounts {
-		return "gpt-5.4"
-	}
-	return "gpt-5.4-mini"
-}
-
-func defaultOpenAIWebRequestedModelForAccount(account *Account) string {
-	if account != nil && strings.Contains(account.GetOpenAIPlanType(), "pro") {
-		return "gpt-5.4"
-	}
-	return "gpt-5.4-mini"
-}
-
 func (s *OpenAIWebThreadService) resolveBillingSubscription(ctx context.Context, userID, groupID int64) (*UserSubscription, error) {
 	if s.subscriptions == nil {
 		return nil, nil

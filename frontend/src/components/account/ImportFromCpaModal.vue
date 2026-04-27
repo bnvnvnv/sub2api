@@ -523,12 +523,13 @@ import BaseDialog from "@/components/common/BaseDialog.vue";
 import ProxySelector from "@/components/common/ProxySelector.vue";
 import GroupSelector from "@/components/common/GroupSelector.vue";
 import { adminAPI } from "@/api/admin";
+import accountsCpaAPI from "@/api/admin/accountsCpa";
 import { useAppStore } from "@/stores/app";
 import type {
   PreviewFromCPAResult,
   PreviewRemoteFromCPAResult,
   SyncFromCPAResult,
-} from "@/api/admin/accounts";
+} from "@/api/admin/accountsCpa";
 import type { AdminGroup, Proxy, AccountPlatform } from "@/types";
 
 interface Props {
@@ -764,7 +765,7 @@ const handlePreview = async () => {
         appStore.showError(t("admin.accounts.cpaRemoteMissingFields"));
         return;
       }
-      const res = await adminAPI.accounts.previewRemoteFromCpa({
+      const res = await accountsCpaAPI.previewRemoteFromCpa({
         base_url: form.base_url.trim(),
         management_key: form.management_key.trim(),
       });
@@ -785,7 +786,7 @@ const handlePreview = async () => {
 
     const text = await readFileAsText(file.value);
     rawJSON.value = text;
-    const res = await adminAPI.accounts.previewFromCpa({
+    const res = await accountsCpaAPI.previewFromCpa({
       file_name: file.value.name,
       raw_json: text,
     });
@@ -810,7 +811,7 @@ const handleImport = async () => {
       }
 
       const hasRemoteNewAccounts = remoteNewAccounts.value.length > 0;
-      const res = await adminAPI.accounts.importRemoteFromCpa({
+      const res = await accountsCpaAPI.importRemoteFromCpa({
         base_url: form.base_url.trim(),
         management_key: form.management_key.trim(),
         selected_source_keys: hasRemoteNewAccounts
@@ -840,7 +841,7 @@ const handleImport = async () => {
         return;
       }
 
-      const res = await adminAPI.accounts.importFromCpa({
+      const res = await accountsCpaAPI.importFromCpa({
         file_name: file.value.name,
         raw_json: rawJSON.value,
         proxy_id: filePreviewResult.value?.existing_account

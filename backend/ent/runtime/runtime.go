@@ -20,7 +20,6 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/idempotencyrecord"
 	"github.com/Wei-Shaw/sub2api/ent/identityadoptiondecision"
-	"github.com/Wei-Shaw/sub2api/ent/openaiwebthread"
 	"github.com/Wei-Shaw/sub2api/ent/paymentauditlog"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
 	"github.com/Wei-Shaw/sub2api/ent/paymentproviderinstance"
@@ -912,114 +911,6 @@ func init() {
 	identityadoptiondecisionDescDecidedAt := identityadoptiondecisionFields[4].Descriptor()
 	// identityadoptiondecision.DefaultDecidedAt holds the default value on creation for the decided_at field.
 	identityadoptiondecision.DefaultDecidedAt = identityadoptiondecisionDescDecidedAt.Default.(func() time.Time)
-	openaiwebthreadFields := schema.OpenAIWebThread{}.Fields()
-	_ = openaiwebthreadFields
-	// openaiwebthreadDescLocalThreadID is the schema descriptor for local_thread_id field.
-	openaiwebthreadDescLocalThreadID := openaiwebthreadFields[3].Descriptor()
-	// openaiwebthread.LocalThreadIDValidator is a validator for the "local_thread_id" field. It is called by the builders before save.
-	openaiwebthread.LocalThreadIDValidator = func() func(string) error {
-		validators := openaiwebthreadDescLocalThreadID.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(local_thread_id string) error {
-			for _, fn := range fns {
-				if err := fn(local_thread_id); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
-	// openaiwebthreadDescPageSessionID is the schema descriptor for page_session_id field.
-	openaiwebthreadDescPageSessionID := openaiwebthreadFields[4].Descriptor()
-	// openaiwebthread.PageSessionIDValidator is a validator for the "page_session_id" field. It is called by the builders before save.
-	openaiwebthread.PageSessionIDValidator = func() func(string) error {
-		validators := openaiwebthreadDescPageSessionID.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(page_session_id string) error {
-			for _, fn := range fns {
-				if err := fn(page_session_id); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
-	// openaiwebthreadDescUpstreamConversationID is the schema descriptor for upstream_conversation_id field.
-	openaiwebthreadDescUpstreamConversationID := openaiwebthreadFields[5].Descriptor()
-	// openaiwebthread.UpstreamConversationIDValidator is a validator for the "upstream_conversation_id" field. It is called by the builders before save.
-	openaiwebthread.UpstreamConversationIDValidator = openaiwebthreadDescUpstreamConversationID.Validators[0].(func(string) error)
-	// openaiwebthreadDescUpstreamSessionID is the schema descriptor for upstream_session_id field.
-	openaiwebthreadDescUpstreamSessionID := openaiwebthreadFields[6].Descriptor()
-	// openaiwebthread.UpstreamSessionIDValidator is a validator for the "upstream_session_id" field. It is called by the builders before save.
-	openaiwebthread.UpstreamSessionIDValidator = openaiwebthreadDescUpstreamSessionID.Validators[0].(func(string) error)
-	// openaiwebthreadDescProvider is the schema descriptor for provider field.
-	openaiwebthreadDescProvider := openaiwebthreadFields[7].Descriptor()
-	// openaiwebthread.DefaultProvider holds the default value on creation for the provider field.
-	openaiwebthread.DefaultProvider = openaiwebthreadDescProvider.Default.(string)
-	// openaiwebthread.ProviderValidator is a validator for the "provider" field. It is called by the builders before save.
-	openaiwebthread.ProviderValidator = openaiwebthreadDescProvider.Validators[0].(func(string) error)
-	// openaiwebthreadDescTitle is the schema descriptor for title field.
-	openaiwebthreadDescTitle := openaiwebthreadFields[8].Descriptor()
-	// openaiwebthread.DefaultTitle holds the default value on creation for the title field.
-	openaiwebthread.DefaultTitle = openaiwebthreadDescTitle.Default.(string)
-	// openaiwebthread.TitleValidator is a validator for the "title" field. It is called by the builders before save.
-	openaiwebthread.TitleValidator = openaiwebthreadDescTitle.Validators[0].(func(string) error)
-	// openaiwebthreadDescRequestedModel is the schema descriptor for requested_model field.
-	openaiwebthreadDescRequestedModel := openaiwebthreadFields[9].Descriptor()
-	// openaiwebthread.DefaultRequestedModel holds the default value on creation for the requested_model field.
-	openaiwebthread.DefaultRequestedModel = openaiwebthreadDescRequestedModel.Default.(string)
-	// openaiwebthread.RequestedModelValidator is a validator for the "requested_model" field. It is called by the builders before save.
-	openaiwebthread.RequestedModelValidator = openaiwebthreadDescRequestedModel.Validators[0].(func(string) error)
-	// openaiwebthreadDescCapabilityMode is the schema descriptor for capability_mode field.
-	openaiwebthreadDescCapabilityMode := openaiwebthreadFields[10].Descriptor()
-	// openaiwebthread.DefaultCapabilityMode holds the default value on creation for the capability_mode field.
-	openaiwebthread.DefaultCapabilityMode = openaiwebthreadDescCapabilityMode.Default.(string)
-	// openaiwebthread.CapabilityModeValidator is a validator for the "capability_mode" field. It is called by the builders before save.
-	openaiwebthread.CapabilityModeValidator = openaiwebthreadDescCapabilityMode.Validators[0].(func(string) error)
-	// openaiwebthreadDescHistoryMode is the schema descriptor for history_mode field.
-	openaiwebthreadDescHistoryMode := openaiwebthreadFields[11].Descriptor()
-	// openaiwebthread.DefaultHistoryMode holds the default value on creation for the history_mode field.
-	openaiwebthread.DefaultHistoryMode = openaiwebthreadDescHistoryMode.Default.(string)
-	// openaiwebthread.HistoryModeValidator is a validator for the "history_mode" field. It is called by the builders before save.
-	openaiwebthread.HistoryModeValidator = openaiwebthreadDescHistoryMode.Validators[0].(func(string) error)
-	// openaiwebthreadDescCachePolicy is the schema descriptor for cache_policy field.
-	openaiwebthreadDescCachePolicy := openaiwebthreadFields[12].Descriptor()
-	// openaiwebthread.DefaultCachePolicy holds the default value on creation for the cache_policy field.
-	openaiwebthread.DefaultCachePolicy = openaiwebthreadDescCachePolicy.Default.(string)
-	// openaiwebthread.CachePolicyValidator is a validator for the "cache_policy" field. It is called by the builders before save.
-	openaiwebthread.CachePolicyValidator = openaiwebthreadDescCachePolicy.Validators[0].(func(string) error)
-	// openaiwebthreadDescSyncStatus is the schema descriptor for sync_status field.
-	openaiwebthreadDescSyncStatus := openaiwebthreadFields[13].Descriptor()
-	// openaiwebthread.DefaultSyncStatus holds the default value on creation for the sync_status field.
-	openaiwebthread.DefaultSyncStatus = openaiwebthreadDescSyncStatus.Default.(string)
-	// openaiwebthread.SyncStatusValidator is a validator for the "sync_status" field. It is called by the builders before save.
-	openaiwebthread.SyncStatusValidator = openaiwebthreadDescSyncStatus.Validators[0].(func(string) error)
-	// openaiwebthreadDescStatus is the schema descriptor for status field.
-	openaiwebthreadDescStatus := openaiwebthreadFields[14].Descriptor()
-	// openaiwebthread.DefaultStatus holds the default value on creation for the status field.
-	openaiwebthread.DefaultStatus = openaiwebthreadDescStatus.Default.(string)
-	// openaiwebthread.StatusValidator is a validator for the "status" field. It is called by the builders before save.
-	openaiwebthread.StatusValidator = openaiwebthreadDescStatus.Validators[0].(func(string) error)
-	// openaiwebthreadDescLastError is the schema descriptor for last_error field.
-	openaiwebthreadDescLastError := openaiwebthreadFields[16].Descriptor()
-	// openaiwebthread.DefaultLastError holds the default value on creation for the last_error field.
-	openaiwebthread.DefaultLastError = openaiwebthreadDescLastError.Default.(string)
-	// openaiwebthreadDescCreatedAt is the schema descriptor for created_at field.
-	openaiwebthreadDescCreatedAt := openaiwebthreadFields[17].Descriptor()
-	// openaiwebthread.DefaultCreatedAt holds the default value on creation for the created_at field.
-	openaiwebthread.DefaultCreatedAt = openaiwebthreadDescCreatedAt.Default.(func() time.Time)
-	// openaiwebthreadDescUpdatedAt is the schema descriptor for updated_at field.
-	openaiwebthreadDescUpdatedAt := openaiwebthreadFields[18].Descriptor()
-	// openaiwebthread.DefaultUpdatedAt holds the default value on creation for the updated_at field.
-	openaiwebthread.DefaultUpdatedAt = openaiwebthreadDescUpdatedAt.Default.(func() time.Time)
-	// openaiwebthread.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	openaiwebthread.UpdateDefaultUpdatedAt = openaiwebthreadDescUpdatedAt.UpdateDefault.(func() time.Time)
 	paymentauditlogFields := schema.PaymentAuditLog{}.Fields()
 	_ = paymentauditlogFields
 	// paymentauditlogDescOrderID is the schema descriptor for order_id field.

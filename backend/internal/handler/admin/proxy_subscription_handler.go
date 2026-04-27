@@ -44,7 +44,13 @@ type ParseSubscriptionResponse struct {
 	Proxies []ParsedSubscriptionProxy `json:"proxies"`
 }
 
-func (h *ProxyHandler) ParseSubscription(c *gin.Context) {
+type ProxySubscriptionHandler struct{}
+
+func NewProxySubscriptionHandler() *ProxySubscriptionHandler {
+	return &ProxySubscriptionHandler{}
+}
+
+func (h *ProxySubscriptionHandler) ParseSubscription(c *gin.Context) {
 	var req ParseSubscriptionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, "Invalid request: "+err.Error())

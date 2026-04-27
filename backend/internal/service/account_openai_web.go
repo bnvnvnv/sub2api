@@ -29,16 +29,3 @@ func (a *Account) SupportsOpenAIWebModel(requestedModel string) bool {
 	planType := a.GetOpenAIPlanType()
 	return strings.Contains(planType, "pro")
 }
-
-func isOpenAIWebProModel(requestedModel string) bool {
-	model := strings.TrimSpace(strings.ToLower(requestedModel))
-	if model == "" {
-		return false
-	}
-	return strings.Contains(model, "5.4-pro") ||
-		strings.Contains(model, "5-4-pro") ||
-		strings.Contains(model, "gpt-5.4-pro") ||
-		strings.Contains(model, "5.5-pro") ||
-		strings.Contains(model, "5-5-pro") ||
-		strings.Contains(model, "gpt-5.5-pro")
-}
