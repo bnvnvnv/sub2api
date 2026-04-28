@@ -195,7 +195,8 @@ export async function getProxyAccounts(id: number): Promise<ProxyAccountSummary[
  */
 export async function batchCreate(
   proxies: Array<{
-    protocol: string
+    name?: string
+    protocol: 'http' | 'https' | 'socks5' | 'socks5h' | 'ss'
     host: string
     port: number
     username?: string

@@ -935,10 +935,10 @@ const columns = computed<Column[]>(() => [
 // Filter options
 const protocolOptions = computed(() => [
   { value: '', label: t('admin.proxies.allProtocols') },
-  { value: 'http', label: 'HTTP' },
-  { value: 'https', label: 'HTTPS' },
-  { value: 'socks5', label: 'SOCKS5' },
-  { value: 'socks5h', label: 'SOCKS5H' },
+  { value: 'http', label: t('admin.proxies.protocols.http') },
+  { value: 'https', label: t('admin.proxies.protocols.https') },
+  { value: 'socks5', label: t('admin.proxies.protocols.socks5') },
+  { value: 'socks5h', label: t('admin.proxies.protocols.socks5h') },
   { value: 'ss', label: t('admin.proxies.protocols.ss') }
 ])
 

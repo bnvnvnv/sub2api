@@ -177,12 +177,13 @@ const subscriptionProxyKey = (proxy: ParsedSubscriptionProxy) =>
 
 const subscriptionSelectedProxyKeySet = computed(() => new Set(subscriptionSelectedProxyKeys.value))
 
-const subscriptionSelectedCount = computed(() => subscriptionSelectedProxyKeys.value.length)
-
 const filteredSubscriptionParsedProxies = computed(() => {
   const keyword = subscriptionImportSearchQuery.value.trim().toLowerCase()
   if (!keyword) return subscriptionParsedProxies.value
-  return subscriptionParsedProxies.value.filter((proxy) => proxy.name.toLowerCase().includes(keyword))
+  return subscriptionParsedProxies.value.filter((proxy) =>
+    [proxy.name, proxy.host, proxy.protocol, proxy.username]
+      .some((value) => value.toLowerCase().includes(keyword))
+  )
 })
 
 const selectedSubscriptionParsedProxies = computed(() =>
@@ -190,6 +191,8 @@ const selectedSubscriptionParsedProxies = computed(() =>
     subscriptionSelectedProxyKeySet.value.has(subscriptionProxyKey(proxy))
   )
 )
+
+const subscriptionSelectedCount = computed(() => selectedSubscriptionParsedProxies.value.length)
 
 const resetSubscriptionImportResult = () => {
   subscriptionImportSearchQuery.value = ''
@@ -257,7 +260,7 @@ const handleParseSubscription = async () => {
   try {
     const result = await proxySubscriptionsAPI.parseSubscription(url)
     subscriptionParsedProxies.value = result.proxies || []
-    selectAllSubscriptionProxies()
+    subscriptionSelectedProxyKeys.value = subscriptionParsedProxies.value.map(subscriptionProxyKey)
     appStore.showSuccess(
       t('admin.proxies.subscriptionImportParsed', { count: subscriptionParsedProxies.value.length })
     )

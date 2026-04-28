@@ -1,4 +1,5 @@
 import { createI18n } from 'vue-i18n'
+import customLocaleMessages from './locales/custom'
 
 type LocaleCode = 'en' | 'zh'
 
@@ -10,6 +11,24 @@ const DEFAULT_LOCALE: LocaleCode = 'en'
 const localeLoaders: Record<LocaleCode, () => Promise<{ default: LocaleMessages }>> = {
   en: () => import('./locales/en'),
   zh: () => import('./locales/zh')
+}
+
+function isPlainObject(value: unknown): value is LocaleMessages {
+  return Object.prototype.toString.call(value) === '[object Object]'
+}
+
+function mergeLocaleMessages(base: LocaleMessages, extension: LocaleMessages): LocaleMessages {
+  const merged: LocaleMessages = { ...base }
+
+  for (const [key, value] of Object.entries(extension)) {
+    if (isPlainObject(value) && isPlainObject(merged[key])) {
+      merged[key] = mergeLocaleMessages(merged[key], value)
+      continue
+    }
+    merged[key] = value
+  }
+
+  return merged
 }
 
 function isLocaleCode(value: string): value is LocaleCode {
@@ -49,7 +68,8 @@ export async function loadLocaleMessages(locale: LocaleCode): Promise<void> {
 
   const loader = localeLoaders[locale]
   const module = await loader()
-  i18n.global.setLocaleMessage(locale, module.default)
+  const extension = customLocaleMessages[locale] || {}
+  i18n.global.setLocaleMessage(locale, mergeLocaleMessages(module.default, extension))
   loadedLocales.add(locale)
 }
 
