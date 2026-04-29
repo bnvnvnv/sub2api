@@ -1,0 +1,12 @@
+[Unit]
+Description=Run Sub2API source auto-upgrade daily
+
+[Timer]
+OnCalendar=*-*-* 04:30:00
+RandomizedDelaySec=45m
+Persistent=true
+Unit=sub2api-auto-upgrade.service
+
+[Install]
+WantedBy=timers.target
+
