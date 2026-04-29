@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Wei-Shaw/sub2api/internal/pkg/anytlsutil"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ssutil"
 )
 
@@ -271,5 +272,38 @@ func TestParse_SSPluginFailFast(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "plugin is not supported") {
 		t.Fatalf("错误信息应包含 plugin 不支持: got %v", err)
+	}
+}
+
+func TestParse_有效AnyTLS代理_兼容Options(t *testing.T) {
+	raw, err := anytlsutil.BuildURL("secret", "anytls.example.com", 443, "sni=cdn.example.com&insecure=1", "node-a")
+	if err != nil {
+		t.Fatalf("build anytls url failed: %v", err)
+	}
+
+	trimmed, parsed, err := Parse(raw)
+	if err != nil {
+		t.Fatalf("有效 anytls 代理应成功: %v", err)
+	}
+	if parsed == nil || parsed.Scheme != "anytls" {
+		t.Fatalf("Scheme 不匹配: got %+v", parsed)
+	}
+	if trimmed == "" || !strings.Contains(trimmed, "sni=cdn.example.com") || !strings.Contains(trimmed, "insecure=1") {
+		t.Fatalf("anytls canonical url should keep options: got %q", trimmed)
+	}
+}
+
+func TestParse_有效VLESS代理_兼容TLSFlag(t *testing.T) {
+	raw := "vless://22222222-2222-2222-2222-222222222222@vless.example.com:443?tls=1&sni=vless.example.com#node-a"
+
+	trimmed, parsed, err := Parse(raw)
+	if err != nil {
+		t.Fatalf("有效 vless 代理应成功: %v", err)
+	}
+	if parsed == nil || parsed.Scheme != "vless" {
+		t.Fatalf("Scheme 不匹配: got %+v", parsed)
+	}
+	if !strings.Contains(trimmed, "security=tls") || strings.Contains(trimmed, "tls=1") {
+		t.Fatalf("vless canonical url should normalize tls flag: got %q", trimmed)
 	}
 }

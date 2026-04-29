@@ -532,9 +532,7 @@ func validateDataProxy(item DataProxy) error {
 	if item.Port <= 0 || item.Port > 65535 {
 		return errors.New("proxy port is invalid")
 	}
-	switch item.Protocol {
-	case "http", "https", "socks5", "socks5h", "ss":
-	default:
+	if !isAdminProxyProtocolSupported(item.Protocol) {
 		return fmt.Errorf("proxy protocol is invalid: %s", item.Protocol)
 	}
 	if item.Status != "" {

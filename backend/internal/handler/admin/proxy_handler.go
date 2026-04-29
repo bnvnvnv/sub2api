@@ -27,7 +27,7 @@ func NewProxyHandler(adminService service.AdminService) *ProxyHandler {
 // CreateProxyRequest represents create proxy request
 type CreateProxyRequest struct {
 	Name     string `json:"name" binding:"required"`
-	Protocol string `json:"protocol" binding:"required,oneof=http https socks5 socks5h ss"`
+	Protocol string `json:"protocol" binding:"required"`
 	Host     string `json:"host" binding:"required"`
 	Port     int    `json:"port" binding:"required,min=1,max=65535"`
 	Username string `json:"username"`
@@ -37,7 +37,7 @@ type CreateProxyRequest struct {
 // UpdateProxyRequest represents update proxy request
 type UpdateProxyRequest struct {
 	Name     string `json:"name"`
-	Protocol string `json:"protocol" binding:"omitempty,oneof=http https socks5 socks5h ss"`
+	Protocol string `json:"protocol"`
 	Host     string `json:"host"`
 	Port     int    `json:"port" binding:"omitempty,min=1,max=65535"`
 	Username string `json:"username"`
@@ -132,11 +132,15 @@ func (h *ProxyHandler) Create(c *gin.Context) {
 		response.BadRequest(c, "Invalid request: "+err.Error())
 		return
 	}
+	protocol, ok := validateAdminProxyProtocol(c, req.Protocol, false)
+	if !ok {
+		return
+	}
 
 	executeAdminIdempotentJSON(c, "admin.proxies.create", req, service.DefaultWriteIdempotencyTTL(), func(ctx context.Context) (any, error) {
 		proxy, err := h.adminService.CreateProxy(ctx, &service.CreateProxyInput{
 			Name:     strings.TrimSpace(req.Name),
-			Protocol: strings.TrimSpace(req.Protocol),
+			Protocol: protocol,
 			Host:     strings.TrimSpace(req.Host),
 			Port:     req.Port,
 			Username: strings.TrimSpace(req.Username),
@@ -163,10 +167,14 @@ func (h *ProxyHandler) Update(c *gin.Context) {
 		response.BadRequest(c, "Invalid request: "+err.Error())
 		return
 	}
+	protocol, ok := validateAdminProxyProtocol(c, req.Protocol, true)
+	if !ok {
+		return
+	}
 
 	proxy, err := h.adminService.UpdateProxy(c.Request.Context(), proxyID, &service.UpdateProxyInput{
 		Name:     strings.TrimSpace(req.Name),
-		Protocol: strings.TrimSpace(req.Protocol),
+		Protocol: protocol,
 		Host:     strings.TrimSpace(req.Host),
 		Port:     req.Port,
 		Username: strings.TrimSpace(req.Username),
@@ -302,7 +310,7 @@ func (h *ProxyHandler) GetProxyAccounts(c *gin.Context) {
 // BatchCreateProxyItem represents a single proxy in batch create request
 type BatchCreateProxyItem struct {
 	Name     string `json:"name"`
-	Protocol string `json:"protocol" binding:"required,oneof=http https socks5 socks5h ss"`
+	Protocol string `json:"protocol" binding:"required"`
 	Host     string `json:"host" binding:"required"`
 	Port     int    `json:"port" binding:"required,min=1,max=65535"`
 	Username string `json:"username"`
@@ -329,7 +337,10 @@ func (h *ProxyHandler) BatchCreate(c *gin.Context) {
 	for _, item := range req.Proxies {
 		// Trim all string fields
 		host := strings.TrimSpace(item.Host)
-		protocol := strings.TrimSpace(item.Protocol)
+		protocol, ok := validateAdminProxyProtocol(c, item.Protocol, false)
+		if !ok {
+			return
+		}
 		username := strings.TrimSpace(item.Username)
 		password := strings.TrimSpace(item.Password)
 

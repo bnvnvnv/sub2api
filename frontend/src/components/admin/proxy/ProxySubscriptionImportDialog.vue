@@ -24,6 +24,59 @@
           @input="resetSubscriptionImportResult"
         />
       </div>
+      <div>
+        <label class="input-label">{{ t('admin.proxies.subscriptionImportClientType') }}</label>
+        <select
+          v-model="subscriptionClientType"
+          class="input"
+          :disabled="subscriptionParsing || subscriptionImporting"
+          @change="resetSubscriptionImportResult"
+        >
+          <option
+            v-for="option in subscriptionClientTypeOptions"
+            :key="option.value"
+            :value="option.value"
+          >
+            {{ t(option.labelKey) }}
+          </option>
+        </select>
+        <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">
+          {{ t('admin.proxies.subscriptionImportClientTypeHint') }}
+        </p>
+      </div>
+      <div
+        v-if="subscriptionParseStats"
+        class="space-y-2 rounded-xl border border-gray-200 bg-gray-50 p-3 text-xs text-gray-600 dark:border-dark-700 dark:bg-dark-800 dark:text-dark-300"
+      >
+        <div class="flex flex-wrap gap-x-4 gap-y-1">
+          <span>
+            {{ t('admin.proxies.subscriptionImportStatsClient', { client: subscriptionParseStats.client_type }) }}
+          </span>
+          <span>
+            {{ t('admin.proxies.subscriptionImportStatsFormat', { format: subscriptionParseStats.format || '-' }) }}
+          </span>
+          <span v-if="subscriptionParseStats.decoded">
+            {{ t('admin.proxies.subscriptionImportStatsDecoded') }}
+          </span>
+        </div>
+        <div class="flex flex-wrap gap-x-4 gap-y-1">
+          <span>
+            {{ t('admin.proxies.subscriptionImportStatsDetected', { protocols: formatProtocolCounts(subscriptionParseStats.detected_protocol_counts) }) }}
+          </span>
+          <span>
+            {{ t('admin.proxies.subscriptionImportStatsSupported', { protocols: formatProtocolCounts(subscriptionParseStats.supported_protocol_counts) }) }}
+          </span>
+          <span>
+            {{ t('admin.proxies.subscriptionImportStatsUnsupported', { protocols: formatProtocolCounts(subscriptionParseStats.unsupported_protocol_counts) }) }}
+          </span>
+        </div>
+        <div
+          v-if="subscriptionParseStats.importable_count === 0 && subscriptionParseStats.unsupported_count > 0"
+          class="rounded-lg border border-red-200 bg-red-50 p-2 text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300"
+        >
+          {{ t('admin.proxies.subscriptionImportUnsupportedOnly') }}
+        </div>
+      </div>
       <div
         v-if="subscriptionParsedProxies.length > 0"
         class="space-y-3 rounded-xl border border-gray-200 p-4 dark:border-dark-700"
@@ -87,13 +140,13 @@
                 {{ proxy.name }}
               </div>
               <div class="truncate font-mono text-xs text-gray-500 dark:text-dark-400">
-                {{ proxy.host }}:{{ proxy.port }}
+                {{ subscriptionProxyEndpointLabel(proxy) }}
               </div>
             </div>
             <span
               class="rounded-full bg-gray-200 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-gray-600 dark:bg-dark-700 dark:text-dark-300"
             >
-              {{ proxy.protocol }}
+              {{ subscriptionProxyProtocolLabel(proxy) }}
             </span>
           </label>
           <div
@@ -145,9 +198,12 @@
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import BaseDialog from '@/components/common/BaseDialog.vue'
-import { adminAPI } from '@/api/admin'
 import proxySubscriptionsAPI from '@/api/admin/proxySubscriptions'
-import type { ParsedSubscriptionProxy } from '@/api/admin/proxySubscriptions'
+import type {
+  ParsedSubscriptionProxy,
+  SubscriptionClientType,
+  SubscriptionParseStats
+} from '@/api/admin/proxySubscriptions'
 import { useAppStore } from '@/stores/app'
 
 interface Props {
@@ -166,14 +222,44 @@ const { t } = useI18n()
 const appStore = useAppStore()
 
 const subscriptionImportUrl = ref('')
+const subscriptionClientType = ref<SubscriptionClientType>('auto')
 const subscriptionImportSearchQuery = ref('')
 const subscriptionParsedProxies = ref<ParsedSubscriptionProxy[]>([])
+const subscriptionParseStats = ref<SubscriptionParseStats | null>(null)
 const subscriptionSelectedProxyKeys = ref<string[]>([])
 const subscriptionParsing = ref(false)
 const subscriptionImporting = ref(false)
 
-const subscriptionProxyKey = (proxy: ParsedSubscriptionProxy) =>
-  `${proxy.protocol}|${proxy.host}|${proxy.port}|${proxy.username}|${proxy.password}|${proxy.name}`
+const subscriptionClientTypeOptions: Array<{ value: SubscriptionClientType; labelKey: string }> = [
+  { value: 'auto', labelKey: 'admin.proxies.subscriptionClientTypes.auto' },
+  { value: 'default', labelKey: 'admin.proxies.subscriptionClientTypes.default' },
+  { value: 'clash', labelKey: 'admin.proxies.subscriptionClientTypes.clash' },
+  { value: 'clash-meta', labelKey: 'admin.proxies.subscriptionClientTypes.clashMeta' },
+  { value: 'mihomo', labelKey: 'admin.proxies.subscriptionClientTypes.mihomo' },
+  { value: 'sing-box', labelKey: 'admin.proxies.subscriptionClientTypes.singBox' },
+  { value: 'surge', labelKey: 'admin.proxies.subscriptionClientTypes.surge' },
+  { value: 'shadowrocket', labelKey: 'admin.proxies.subscriptionClientTypes.shadowrocket' },
+  { value: 'stash', labelKey: 'admin.proxies.subscriptionClientTypes.stash' },
+  { value: 'quantumult-x', labelKey: 'admin.proxies.subscriptionClientTypes.quantumultX' },
+  { value: 'loon', labelKey: 'admin.proxies.subscriptionClientTypes.loon' },
+  { value: 'v2rayn', labelKey: 'admin.proxies.subscriptionClientTypes.v2rayn' }
+]
+
+const subscriptionProxyKey = (proxy: ParsedSubscriptionProxy) => {
+  return `${proxy.import_mode || 'direct'}|${proxy.node_protocol || proxy.protocol}|${proxy.host}|${proxy.port}|${proxy.username}|${proxy.password}|${proxy.name}`
+}
+
+const formatProtocolCounts = (counts: Record<string, number>) => {
+  const entries = Object.entries(counts || {})
+  if (entries.length === 0) return '-'
+  return entries.map(([protocol, count]) => `${protocol}:${count}`).join(', ')
+}
+
+const subscriptionProxyProtocolLabel = (proxy: ParsedSubscriptionProxy) =>
+  proxy.node_protocol || proxy.protocol
+
+const subscriptionProxyEndpointLabel = (proxy: ParsedSubscriptionProxy) =>
+  `${proxy.host}:${proxy.port}`
 
 const subscriptionSelectedProxyKeySet = computed(() => new Set(subscriptionSelectedProxyKeys.value))
 
@@ -197,11 +283,13 @@ const subscriptionSelectedCount = computed(() => selectedSubscriptionParsedProxi
 const resetSubscriptionImportResult = () => {
   subscriptionImportSearchQuery.value = ''
   subscriptionParsedProxies.value = []
+  subscriptionParseStats.value = null
   subscriptionSelectedProxyKeys.value = []
 }
 
 const resetDialogState = () => {
   subscriptionImportUrl.value = ''
+  subscriptionClientType.value = 'auto'
   resetSubscriptionImportResult()
 }
 
@@ -258,12 +346,19 @@ const handleParseSubscription = async () => {
 
   subscriptionParsing.value = true
   try {
-    const result = await proxySubscriptionsAPI.parseSubscription(url)
+    const result = await proxySubscriptionsAPI.parseSubscription(url, subscriptionClientType.value)
     subscriptionParsedProxies.value = result.proxies || []
+    subscriptionParseStats.value = result.stats || null
     subscriptionSelectedProxyKeys.value = subscriptionParsedProxies.value.map(subscriptionProxyKey)
-    appStore.showSuccess(
-      t('admin.proxies.subscriptionImportParsed', { count: subscriptionParsedProxies.value.length })
-    )
+    if (subscriptionParsedProxies.value.length > 0) {
+      appStore.showSuccess(
+        t('admin.proxies.subscriptionImportParsed', { count: subscriptionParsedProxies.value.length })
+      )
+    } else if (subscriptionParseStats.value?.unsupported_count) {
+      appStore.showError(t('admin.proxies.subscriptionImportUnsupportedOnly'))
+    } else {
+      appStore.showError(t('admin.proxies.subscriptionImportFailed'))
+    }
   } catch (error: any) {
     resetSubscriptionImportResult()
     appStore.showError(error.response?.data?.detail || t('admin.proxies.subscriptionImportFailed'))
@@ -285,7 +380,7 @@ const handleSubscriptionImport = async () => {
 
   subscriptionImporting.value = true
   try {
-    const result = await adminAPI.proxies.batchCreate(selectedSubscriptionParsedProxies.value)
+    const result = await proxySubscriptionsAPI.importSubscription(selectedSubscriptionParsedProxies.value)
     const created = result.created || 0
     const skipped = result.skipped || 0
 
@@ -293,6 +388,14 @@ const handleSubscriptionImport = async () => {
       appStore.showSuccess(t('admin.proxies.batchImportSuccess', { created, skipped }))
     } else {
       appStore.showInfo(t('admin.proxies.batchImportAllSkipped', { skipped }))
+    }
+    if (result.warnings?.length) {
+      appStore.showError(result.warnings.join('\n'))
+    }
+    if (result.failed?.length) {
+      appStore.showError(
+        t('admin.proxies.subscriptionImportPartialFailed', { count: result.failed.length })
+      )
     }
 
     resetDialogState()

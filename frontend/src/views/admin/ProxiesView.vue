@@ -451,7 +451,7 @@
           <input
             v-model="createForm.username"
             type="text"
-            :required="isCreateShadowsocks"
+            :required="isCreatePrimaryCredentialRequired"
             class="input"
             :placeholder="createPrimaryCredentialPlaceholder"
           />
@@ -462,7 +462,7 @@
             <input
               v-model="createForm.password"
               :type="createPasswordVisible ? 'text' : 'password'"
-              :required="isCreateShadowsocks"
+              :required="isCreatePasswordRequired"
               class="input pr-10"
               :placeholder="createPasswordPlaceholder"
             />
@@ -651,7 +651,7 @@
           <input
             v-model="editForm.username"
             type="text"
-            :required="isEditShadowsocks"
+            :required="isEditPrimaryCredentialRequired"
             class="input"
             :placeholder="editPrimaryCredentialPlaceholder"
           />
@@ -662,7 +662,7 @@
             <input
               v-model="editForm.password"
               :type="editPasswordVisible ? 'text' : 'password'"
-              :required="isEditShadowsocks"
+              :required="isEditPasswordRequired"
               :placeholder="t('admin.proxies.leaveEmptyToKeep')"
               class="input pr-10"
               @input="editPasswordDirty = true"
@@ -910,6 +910,16 @@ import ProxySubscriptionImportDialog from '@/components/admin/proxy/ProxySubscri
 import Select from '@/components/common/Select.vue'
 import Icon from '@/components/icons/Icon.vue'
 import PlatformTypeBadge from '@/components/common/PlatformTypeBadge.vue'
+import {
+  getProxyPrimaryCredentialLabel,
+  getProxyPrimaryCredentialPlaceholder,
+  getProxyProtocolOptions,
+  getProxySecretLabel,
+  getProxySecretPlaceholder,
+  isProxyPrimaryCredentialRequired,
+  isProxySecretRequired,
+  validateProxyProtocolCredentials
+} from '@/extensions/proxyProtocols'
 import { useClipboard } from '@/composables/useClipboard'
 import { useSwipeSelect } from '@/composables/useSwipeSelect'
 import { useTableSelection } from '@/composables/useTableSelection'
@@ -933,14 +943,7 @@ const columns = computed<Column[]>(() => [
 ])
 
 // Filter options
-const protocolOptions = computed(() => [
-  { value: '', label: t('admin.proxies.allProtocols') },
-  { value: 'http', label: t('admin.proxies.protocols.http') },
-  { value: 'https', label: t('admin.proxies.protocols.https') },
-  { value: 'socks5', label: t('admin.proxies.protocols.socks5') },
-  { value: 'socks5h', label: t('admin.proxies.protocols.socks5h') },
-  { value: 'ss', label: t('admin.proxies.protocols.ss') }
-])
+const protocolOptions = computed(() => getProxyProtocolOptions(t, true))
 
 const statusOptions = computed(() => [
   { value: '', label: t('admin.proxies.allStatus') },
@@ -949,13 +952,7 @@ const statusOptions = computed(() => [
 ])
 
 // Form options
-const protocolSelectOptions = computed(() => [
-  { value: 'http', label: t('admin.proxies.protocols.http') },
-  { value: 'https', label: t('admin.proxies.protocols.https') },
-  { value: 'socks5', label: t('admin.proxies.protocols.socks5') },
-  { value: 'socks5h', label: t('admin.proxies.protocols.socks5h') },
-  { value: 'ss', label: t('admin.proxies.protocols.ss') }
-])
+const protocolSelectOptions = computed(() => getProxyProtocolOptions(t))
 
 const editStatusOptions = computed(() => [
   { value: 'active', label: t('admin.accounts.status.active') },
@@ -1066,38 +1063,34 @@ const editForm = reactive({
   status: 'active' as 'active' | 'inactive'
 })
 
-const isCreateShadowsocks = computed(() => createForm.protocol === 'ss')
-const isEditShadowsocks = computed(() => editForm.protocol === 'ss')
+const isCreatePrimaryCredentialRequired = computed(() =>
+  isProxyPrimaryCredentialRequired(createForm.protocol)
+)
+const isEditPrimaryCredentialRequired = computed(() =>
+  isProxyPrimaryCredentialRequired(editForm.protocol)
+)
+const isCreatePasswordRequired = computed(() => isProxySecretRequired(createForm.protocol))
+const isEditPasswordRequired = computed(() => isProxySecretRequired(editForm.protocol))
 const createPrimaryCredentialLabel = computed(() =>
-  isCreateShadowsocks.value ? t('admin.proxies.ssMethod') : t('admin.proxies.username')
+  getProxyPrimaryCredentialLabel(createForm.protocol, t)
 )
 const editPrimaryCredentialLabel = computed(() =>
-  isEditShadowsocks.value ? t('admin.proxies.ssMethod') : t('admin.proxies.username')
+  getProxyPrimaryCredentialLabel(editForm.protocol, t)
 )
 const createPrimaryCredentialPlaceholder = computed(() =>
-  isCreateShadowsocks.value ? t('admin.proxies.ssMethodPlaceholder') : t('admin.proxies.optionalAuth')
+  getProxyPrimaryCredentialPlaceholder(createForm.protocol, t)
 )
 const editPrimaryCredentialPlaceholder = computed(() =>
-  isEditShadowsocks.value ? t('admin.proxies.ssMethodPlaceholder') : t('admin.proxies.optionalAuth')
+  getProxyPrimaryCredentialPlaceholder(editForm.protocol, t)
 )
-const createPasswordLabel = computed(() =>
-  isCreateShadowsocks.value ? t('admin.proxies.ssPassword') : t('admin.proxies.password')
-)
-const editPasswordLabel = computed(() =>
-  isEditShadowsocks.value ? t('admin.proxies.ssPassword') : t('admin.proxies.password')
-)
-const createPasswordPlaceholder = computed(() =>
-  isCreateShadowsocks.value ? t('admin.proxies.ssPasswordPlaceholder') : t('admin.proxies.optionalAuth')
-)
+const createPasswordLabel = computed(() => getProxySecretLabel(createForm.protocol, t))
+const editPasswordLabel = computed(() => getProxySecretLabel(editForm.protocol, t))
+const createPasswordPlaceholder = computed(() => getProxySecretPlaceholder(createForm.protocol, t))
 
 const validateProtocolCredentials = (protocol: ProxyProtocol, username: string, password: string) => {
-  if (protocol !== 'ss') return true
-  if (!username.trim()) {
-    appStore.showError(t('admin.proxies.ssMethodRequired'))
-    return false
-  }
-  if (!password.trim()) {
-    appStore.showError(t('admin.proxies.ssPasswordRequired'))
+  const error = validateProxyProtocolCredentials(protocol, username, password, t)
+  if (error) {
+    appStore.showError(error)
     return false
   }
   return true

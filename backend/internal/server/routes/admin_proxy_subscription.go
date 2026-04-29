@@ -7,4 +7,5 @@ import (
 
 func registerProxySubscriptionRoutes(proxies *gin.RouterGroup, h *handler.Handlers) {
 	proxies.POST("/subscription/parse", h.Admin.ProxySubscription.ParseSubscription)
+	proxies.POST("/subscription/import", h.Admin.Proxy.ImportSubscription)
 }
