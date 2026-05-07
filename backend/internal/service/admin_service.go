@@ -397,6 +397,7 @@ type GenerateRedeemCodesInput struct {
 	Value        float64
 	GroupID      *int64 // 订阅类型专用：关联的分组ID
 	ValidityDays int    // 订阅类型专用：有效天数
+	QuotaPeriod  string // 订阅临时额度类型专用：daily/weekly/monthly
 }
 
 type ProxyBatchDeleteResult struct {
@@ -429,6 +430,8 @@ type ProxyQualityCheckResult struct {
 	ExitIP         string                  `json:"exit_ip,omitempty"`
 	Country        string                  `json:"country,omitempty"`
 	CountryCode    string                  `json:"country_code,omitempty"`
+	Region         string                  `json:"region,omitempty"`
+	City           string                  `json:"city,omitempty"`
 	BaseLatencyMs  int64                   `json:"base_latency_ms,omitempty"`
 	PassedCount    int                     `json:"passed_count"`
 	WarnCount      int                     `json:"warn_count"`
@@ -2966,10 +2969,9 @@ func (s *adminServiceImpl) GetRedeemCode(ctx context.Context, id int64) (*Redeem
 }
 
 func (s *adminServiceImpl) GenerateRedeemCodes(ctx context.Context, input *GenerateRedeemCodesInput) ([]RedeemCode, error) {
-	// 如果是订阅类型，验证必须有 GroupID
-	if input.Type == RedeemTypeSubscription {
+	if input.Type == RedeemTypeSubscription || input.Type == RedeemTypeSubscriptionQuota {
 		if input.GroupID == nil {
-			return nil, errors.New("group_id is required for subscription type")
+			return nil, errors.New("group_id is required for subscription redeem type")
 		}
 		// 验证分组存在且为订阅类型
 		group, err := s.groupRepo.GetByID(ctx, *input.GroupID)
@@ -2978,6 +2980,19 @@ func (s *adminServiceImpl) GenerateRedeemCodes(ctx context.Context, input *Gener
 		}
 		if !group.IsSubscriptionType() {
 			return nil, errors.New("group must be subscription type")
+		}
+		if input.Type == RedeemTypeSubscriptionQuota {
+			period, err := NormalizeSubscriptionQuotaPeriod(input.QuotaPeriod)
+			if err != nil {
+				return nil, err
+			}
+			if input.Value <= 0 {
+				return nil, errors.New("value must be greater than 0 for subscription quota type")
+			}
+			if !SubscriptionQuotaPeriodHasLimit(group, period) {
+				return nil, errors.New("group does not have a configured limit for quota_period")
+			}
+			input.QuotaPeriod = period
 		}
 	}
 
@@ -3000,6 +3015,9 @@ func (s *adminServiceImpl) GenerateRedeemCodes(ctx context.Context, input *Gener
 			if code.ValidityDays <= 0 {
 				code.ValidityDays = 30 // 默认30天
 			}
+		} else if input.Type == RedeemTypeSubscriptionQuota {
+			code.GroupID = input.GroupID
+			code.QuotaPeriod = input.QuotaPeriod
 		}
 		if err := s.redeemCodeRepo.Create(ctx, &code); err != nil {
 			return nil, err
@@ -3123,6 +3141,8 @@ func (s *adminServiceImpl) CheckProxyQuality(ctx context.Context, id int64) (*Pr
 	result.ExitIP = exitInfo.IP
 	result.Country = exitInfo.Country
 	result.CountryCode = exitInfo.CountryCode
+	result.Region = exitInfo.Region
+	result.City = exitInfo.City
 	result.BaseLatencyMs = latencyMs
 	result.Items = append(result.Items, ProxyQualityCheckItem{
 		Target:    "base_connectivity",

@@ -66,6 +66,10 @@ type RedeemCodeRepository interface {
 	SumPositiveBalanceByUser(ctx context.Context, userID int64) (float64, error)
 }
 
+type subscriptionQuotaBonusRepository interface {
+	AddQuotaBonus(ctx context.Context, id int64, period string, amountUSD float64) error
+}
+
 // GenerateCodesRequest 生成兑换码请求
 type GenerateCodesRequest struct {
 	Count int     `json:"count"`
@@ -204,6 +208,13 @@ func (s *RedeemService) CreateCode(ctx context.Context, code *RedeemCode) error 
 	if code.Type != RedeemTypeInvitation && code.Value == 0 {
 		return errors.New("value must not be zero")
 	}
+	if code.Type == RedeemTypeSubscriptionQuota {
+		if err := validateSubscriptionQuotaRedeemCode(code); err != nil {
+			return err
+		}
+		period, _ := NormalizeSubscriptionQuotaPeriod(code.QuotaPeriod)
+		code.QuotaPeriod = period
+	}
 	if code.Status == "" {
 		code.Status = StatusUnused
 	}
@@ -299,6 +310,11 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 	if redeemCode.Type == RedeemTypeSubscription && redeemCode.GroupID == nil {
 		return nil, infraerrors.BadRequest("REDEEM_CODE_INVALID", "invalid subscription redeem code: missing group_id")
 	}
+	if redeemCode.Type == RedeemTypeSubscriptionQuota {
+		if err := validateSubscriptionQuotaRedeemCode(redeemCode); err != nil {
+			return nil, err
+		}
+	}
 
 	// 获取用户信息
 	user, err := s.userRepo.GetByID(ctx, userID)
@@ -370,6 +386,11 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 			}
 		}
 
+	case RedeemTypeSubscriptionQuota:
+		if err := s.redeemSubscriptionQuota(txCtx, userID, redeemCode); err != nil {
+			return nil, fmt.Errorf("redeem subscription quota: %w", err)
+		}
+
 	default:
 		return nil, fmt.Errorf("unsupported redeem type: %s", redeemCode.Type)
 	}
@@ -418,7 +439,7 @@ func (s *RedeemService) invalidateRedeemCaches(ctx context.Context, userID int64
 		if s.billingCacheService == nil {
 			return
 		}
-	case RedeemTypeSubscription:
+	case RedeemTypeSubscription, RedeemTypeSubscriptionQuota:
 		if s.authCacheInvalidator != nil {
 			s.authCacheInvalidator.InvalidateAuthCacheByUserID(ctx, userID)
 		}
@@ -500,6 +521,71 @@ func (s *RedeemService) Delete(ctx context.Context, id int64) error {
 		return fmt.Errorf("delete redeem code: %w", err)
 	}
 
+	return nil
+}
+
+func validateSubscriptionQuotaRedeemCode(code *RedeemCode) error {
+	if code == nil {
+		return infraerrors.BadRequest("REDEEM_CODE_INVALID", "invalid subscription quota redeem code")
+	}
+	if code.GroupID == nil {
+		return infraerrors.BadRequest("REDEEM_CODE_INVALID", "invalid subscription quota redeem code: missing group_id")
+	}
+	if code.Value <= 0 {
+		return infraerrors.BadRequest("REDEEM_CODE_INVALID", "subscription quota value must be greater than 0")
+	}
+	if _, err := NormalizeSubscriptionQuotaPeriod(code.QuotaPeriod); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *RedeemService) redeemSubscriptionQuota(ctx context.Context, userID int64, code *RedeemCode) error {
+	if s.subscriptionService == nil || s.subscriptionService.userSubRepo == nil || s.subscriptionService.groupRepo == nil {
+		return infraerrors.InternalServer("SUBSCRIPTION_QUOTA_NOT_CONFIGURED", "subscription quota redeem is not configured")
+	}
+	if err := validateSubscriptionQuotaRedeemCode(code); err != nil {
+		return err
+	}
+	period, err := NormalizeSubscriptionQuotaPeriod(code.QuotaPeriod)
+	if err != nil {
+		return err
+	}
+
+	group, err := s.subscriptionService.groupRepo.GetByID(ctx, *code.GroupID)
+	if err != nil {
+		return fmt.Errorf("group not found: %w", err)
+	}
+	if !group.IsSubscriptionType() {
+		return ErrGroupNotSubscriptionType
+	}
+	if !SubscriptionQuotaPeriodHasLimit(group, period) {
+		return infraerrors.BadRequest("SUBSCRIPTION_QUOTA_LIMIT_NOT_CONFIGURED", "target subscription group has no limit for quota_period")
+	}
+
+	sub, err := s.subscriptionService.userSubRepo.GetActiveByUserIDAndGroupID(ctx, userID, *code.GroupID)
+	if err != nil {
+		return ErrSubscriptionNotFound
+	}
+
+	if !sub.IsWindowActivated() {
+		if err := s.subscriptionService.CheckAndActivateWindow(ctx, sub); err != nil {
+			return err
+		}
+	}
+	if err := s.subscriptionService.CheckAndResetWindows(ctx, sub); err != nil {
+		return err
+	}
+
+	quotaRepo, ok := s.subscriptionService.userSubRepo.(subscriptionQuotaBonusRepository)
+	if !ok {
+		return infraerrors.InternalServer("SUBSCRIPTION_QUOTA_NOT_SUPPORTED", "subscription quota bonus repository is not available")
+	}
+	if err := quotaRepo.AddQuotaBonus(ctx, sub.ID, period, code.Value); err != nil {
+		return err
+	}
+
+	s.subscriptionService.InvalidateSubCache(userID, *code.GroupID)
 	return nil
 }
 

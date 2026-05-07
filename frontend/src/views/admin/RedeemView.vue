@@ -88,7 +88,7 @@
                 'badge',
                 value === 'balance'
                   ? 'badge-success'
-                  : value === 'subscription'
+                  : value === 'subscription' || value === 'subscription_quota'
                     ? 'badge-warning'
                     : 'badge-primary'
               ]"
@@ -102,6 +102,12 @@
               <template v-if="row.type === 'balance'">${{ value.toFixed(2) }}</template>
               <template v-else-if="row.type === 'subscription'">
                 {{ row.validity_days || 30 }} {{ t('admin.redeem.days') }}
+                <span v-if="row.group" class="ml-1 text-xs text-gray-500 dark:text-gray-400"
+                  >({{ row.group.name }})</span
+                >
+              </template>
+              <template v-else-if="row.type === 'subscription_quota'">
+                ${{ value.toFixed(2) }} / {{ quotaPeriodLabel(row.quota_period) }}
                 <span v-if="row.group" class="ml-1 text-xs text-gray-500 dark:text-gray-400"
                   >({{ row.group.name }})</span
                 >
@@ -224,6 +230,8 @@
                 {{
                   generateForm.type === 'balance'
                     ? t('admin.redeem.amount')
+                    : generateForm.type === 'subscription_quota'
+                      ? t('admin.redeem.quotaAmount')
                     : t('admin.redeem.columns.value')
                 }}
               </label>
@@ -242,8 +250,8 @@
                 {{ t('admin.redeem.invitationHint') }}
               </p>
             </div>
-            <!-- 订阅类型：显示分组选择和有效天数 -->
-            <template v-if="generateForm.type === 'subscription'">
+            <!-- 订阅类型：显示分组选择和有效天数/临时额度周期 -->
+            <template v-if="generateForm.type === 'subscription' || generateForm.type === 'subscription_quota'">
               <div>
                 <label class="input-label">{{ t('admin.redeem.selectGroup') }}</label>
                 <Select
@@ -275,7 +283,7 @@
                   </template>
                 </Select>
               </div>
-              <div>
+              <div v-if="generateForm.type === 'subscription'">
                 <label class="input-label">{{ t('admin.redeem.validityDays') }}</label>
                 <input
                   v-model.number="generateForm.validity_days"
@@ -285,6 +293,10 @@
                   required
                   class="input"
                 />
+              </div>
+              <div v-else>
+                <label class="input-label">{{ t('admin.redeem.quotaPeriod') }}</label>
+                <Select v-model="generateForm.quota_period" :options="quotaPeriodOptions" />
               </div>
             </template>
             <div>
@@ -406,7 +418,14 @@ import { useClipboard } from '@/composables/useClipboard'
 import { getPersistedPageSize } from '@/composables/usePersistedPageSize'
 import { adminAPI } from '@/api/admin'
 import { formatDateTime } from '@/utils/format'
-import type { RedeemCode, RedeemCodeType, Group, GroupPlatform, SubscriptionType } from '@/types'
+import type {
+  RedeemCode,
+  RedeemCodeType,
+  SubscriptionQuotaPeriod,
+  Group,
+  GroupPlatform,
+  SubscriptionType
+} from '@/types'
 import type { Column } from '@/components/common/types'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import TablePageLayout from '@/components/layout/TablePageLayout.vue'
@@ -513,6 +532,7 @@ const typeOptions = computed(() => [
   { value: 'balance', label: t('admin.redeem.balance') },
   { value: 'concurrency', label: t('admin.redeem.concurrency') },
   { value: 'subscription', label: t('admin.redeem.subscription') },
+  { value: 'subscription_quota', label: t('admin.redeem.subscriptionQuota') },
   { value: 'invitation', label: t('admin.redeem.invitation') }
 ])
 
@@ -521,8 +541,20 @@ const filterTypeOptions = computed(() => [
   { value: 'balance', label: t('admin.redeem.balance') },
   { value: 'concurrency', label: t('admin.redeem.concurrency') },
   { value: 'subscription', label: t('admin.redeem.subscription') },
+  { value: 'subscription_quota', label: t('admin.redeem.subscriptionQuota') },
   { value: 'invitation', label: t('admin.redeem.invitation') }
 ])
+
+const quotaPeriodOptions = computed(() => [
+  { value: 'daily', label: t('admin.redeem.periods.daily') },
+  { value: 'weekly', label: t('admin.redeem.periods.weekly') },
+  { value: 'monthly', label: t('admin.redeem.periods.monthly') }
+])
+
+const quotaPeriodLabel = (period?: SubscriptionQuotaPeriod | '') => {
+  if (!period) return '-'
+  return t(`admin.redeem.periods.${period}`)
+}
 
 const filterStatusOptions = computed(() => [
   { value: '', label: t('admin.redeem.allStatus') },
@@ -562,7 +594,8 @@ const generateForm = reactive({
   value: 10,
   count: 1,
   group_id: null as number | null,
-  validity_days: 30
+  validity_days: 30,
+  quota_period: 'daily' as SubscriptionQuotaPeriod
 })
 
 // 监听类型变化，邀请码类型时自动设置 value 为 0
@@ -654,8 +687,12 @@ const handleSort = (key: string, order: 'asc' | 'desc') => {
 
 const handleGenerateCodes = async () => {
   // 订阅类型必须选择分组
-  if (generateForm.type === 'subscription' && !generateForm.group_id) {
+  if ((generateForm.type === 'subscription' || generateForm.type === 'subscription_quota') && !generateForm.group_id) {
     appStore.showError(t('admin.redeem.groupRequired'))
+    return
+  }
+  if (generateForm.type === 'subscription_quota' && generateForm.value <= 0) {
+    appStore.showError(t('admin.redeem.quotaAmountRequired'))
     return
   }
 
@@ -665,8 +702,11 @@ const handleGenerateCodes = async () => {
       generateForm.count,
       generateForm.type,
       generateForm.value,
-      generateForm.type === 'subscription' ? generateForm.group_id : undefined,
-      generateForm.type === 'subscription' ? generateForm.validity_days : undefined
+      generateForm.type === 'subscription' || generateForm.type === 'subscription_quota'
+        ? generateForm.group_id
+        : undefined,
+      generateForm.type === 'subscription' ? generateForm.validity_days : undefined,
+      generateForm.type === 'subscription_quota' ? generateForm.quota_period : undefined
     )
     showGenerateDialog.value = false
     generatedCodes.value = result
@@ -674,6 +714,7 @@ const handleGenerateCodes = async () => {
     // 重置表单
     generateForm.group_id = null
     generateForm.validity_days = 30
+    generateForm.quota_period = 'daily'
     loadCodes()
   } catch (error: any) {
     appStore.showError(error.response?.data?.detail || t('admin.redeem.failedToGenerate'))

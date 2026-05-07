@@ -39,7 +39,7 @@ func ProvideEmailQueueService(emailService *EmailService) *EmailQueueService {
 	return NewEmailQueueService(emailService, 3)
 }
 
-// ProvideOAuthRefreshAPI creates OAuthRefreshAPI with the default lock TTL.
+// ProvideOAuthRefreshAPI avoids Wire treating the variadic lock TTL as a required []time.Duration dependency.
 func ProvideOAuthRefreshAPI(accountRepo AccountRepository, tokenCache GeminiTokenCache) *OAuthRefreshAPI {
 	return NewOAuthRefreshAPI(accountRepo, tokenCache)
 }
@@ -479,6 +479,10 @@ var ProviderSet = wire.NewSet(
 	ProvideEmailQueueService,
 	NewTurnstileService,
 	NewSubscriptionService,
+	NewOpenAIWebThreadService,
+	wire.Bind(new(OpenAIWebGroupAccessService), new(*APIKeyService)),
+	wire.Bind(new(OpenAIWebAccountSelector), new(*OpenAIGatewayService)),
+	wire.Bind(new(OpenAIWebMessageGateway), new(*OpenAIGatewayService)),
 	wire.Bind(new(DefaultSubscriptionAssigner), new(*SubscriptionService)),
 	ProvideConcurrencyService,
 	ProvideUserMessageQueueService,
@@ -486,6 +490,7 @@ var ProviderSet = wire.NewSet(
 	ProvideSchedulerSnapshotService,
 	NewIdentityService,
 	NewCRSSyncService,
+	NewCPAImportService,
 	ProvideUpdateService,
 	ProvideTokenRefreshService,
 	ProvideAccountExpiryService,

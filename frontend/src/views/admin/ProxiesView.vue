@@ -76,6 +76,9 @@
             <button @click="showImportData = true" class="btn btn-secondary">
               {{ t('admin.proxies.dataImport') }}
             </button>
+            <button @click="openSubscriptionImportDialog" class="btn btn-secondary">
+              {{ t('admin.proxies.subscriptionImport') }}
+            </button>
             <button @click="showExportDataDialog = true" class="btn btn-secondary">
               {{ selectedCount > 0 ? t('admin.proxies.dataExportSelected') : t('admin.proxies.dataExport') }}
             </button>
@@ -444,22 +447,24 @@
           </div>
         </div>
         <div>
-          <label class="input-label">{{ t('admin.proxies.username') }}</label>
+          <label class="input-label">{{ createPrimaryCredentialLabel }}</label>
           <input
             v-model="createForm.username"
             type="text"
+            :required="isCreatePrimaryCredentialRequired"
             class="input"
-            :placeholder="t('admin.proxies.optionalAuth')"
+            :placeholder="createPrimaryCredentialPlaceholder"
           />
         </div>
         <div>
-          <label class="input-label">{{ t('admin.proxies.password') }}</label>
+          <label class="input-label">{{ createPasswordLabel }}</label>
           <div class="relative">
             <input
               v-model="createForm.password"
               :type="createPasswordVisible ? 'text' : 'password'"
+              :required="isCreatePasswordRequired"
               class="input pr-10"
-              :placeholder="t('admin.proxies.optionalAuth')"
+              :placeholder="createPasswordPlaceholder"
             />
             <button
               type="button"
@@ -642,15 +647,22 @@
           </div>
         </div>
         <div>
-          <label class="input-label">{{ t('admin.proxies.username') }}</label>
-          <input v-model="editForm.username" type="text" class="input" />
+          <label class="input-label">{{ editPrimaryCredentialLabel }}</label>
+          <input
+            v-model="editForm.username"
+            type="text"
+            :required="isEditPrimaryCredentialRequired"
+            class="input"
+            :placeholder="editPrimaryCredentialPlaceholder"
+          />
         </div>
         <div>
-          <label class="input-label">{{ t('admin.proxies.password') }}</label>
+          <label class="input-label">{{ editPasswordLabel }}</label>
           <div class="relative">
             <input
               v-model="editForm.password"
               :type="editPasswordVisible ? 'text' : 'password'"
+              :required="isEditPasswordRequired"
               :placeholder="t('admin.proxies.leaveEmptyToKeep')"
               class="input pr-10"
               @input="editPasswordDirty = true"
@@ -748,6 +760,12 @@
       @imported="handleDataImported"
     />
 
+    <ProxySubscriptionImportDialog
+      :show="showSubscriptionImportDialog"
+      @close="showSubscriptionImportDialog = false"
+      @imported="handleSubscriptionImported"
+    />
+
     <BaseDialog
       :show="showQualityReportDialog"
       :title="t('admin.proxies.qualityReportTitle')"
@@ -777,6 +795,8 @@
           <div class="mt-3 grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-300">
             <div>{{ t('admin.proxies.qualityExitIP') }}: {{ qualityReport.exit_ip || '-' }}</div>
             <div>{{ t('admin.proxies.qualityCountry') }}: {{ qualityReport.country || '-' }}</div>
+            <div>{{ t('admin.proxies.qualityRegion') }}: {{ qualityReport.region || '-' }}</div>
+            <div>{{ t('admin.proxies.qualityCity') }}: {{ qualityReport.city || '-' }}</div>
             <div>
               {{ t('admin.proxies.qualityBaseLatency') }}:
               {{ typeof qualityReport.base_latency_ms === 'number' ? `${qualityReport.base_latency_ms}ms` : '-' }}
@@ -886,9 +906,20 @@ import BaseDialog from '@/components/common/BaseDialog.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import ImportDataModal from '@/components/admin/proxy/ImportDataModal.vue'
+import ProxySubscriptionImportDialog from '@/components/admin/proxy/ProxySubscriptionImportDialog.vue'
 import Select from '@/components/common/Select.vue'
 import Icon from '@/components/icons/Icon.vue'
 import PlatformTypeBadge from '@/components/common/PlatformTypeBadge.vue'
+import {
+  getProxyPrimaryCredentialLabel,
+  getProxyPrimaryCredentialPlaceholder,
+  getProxyProtocolOptions,
+  getProxySecretLabel,
+  getProxySecretPlaceholder,
+  isProxyPrimaryCredentialRequired,
+  isProxySecretRequired,
+  validateProxyProtocolCredentials
+} from '@/extensions/proxyProtocols'
 import { useClipboard } from '@/composables/useClipboard'
 import { useSwipeSelect } from '@/composables/useSwipeSelect'
 import { useTableSelection } from '@/composables/useTableSelection'
@@ -912,13 +943,7 @@ const columns = computed<Column[]>(() => [
 ])
 
 // Filter options
-const protocolOptions = computed(() => [
-  { value: '', label: t('admin.proxies.allProtocols') },
-  { value: 'http', label: 'HTTP' },
-  { value: 'https', label: 'HTTPS' },
-  { value: 'socks5', label: 'SOCKS5' },
-  { value: 'socks5h', label: 'SOCKS5H' }
-])
+const protocolOptions = computed(() => getProxyProtocolOptions(t, true))
 
 const statusOptions = computed(() => [
   { value: '', label: t('admin.proxies.allStatus') },
@@ -927,12 +952,7 @@ const statusOptions = computed(() => [
 ])
 
 // Form options
-const protocolSelectOptions = computed(() => [
-  { value: 'http', label: t('admin.proxies.protocols.http') },
-  { value: 'https', label: t('admin.proxies.protocols.https') },
-  { value: 'socks5', label: t('admin.proxies.protocols.socks5') },
-  { value: 'socks5h', label: t('admin.proxies.protocols.socks5h') }
-])
+const protocolSelectOptions = computed(() => getProxyProtocolOptions(t))
 
 const editStatusOptions = computed(() => [
   { value: 'active', label: t('admin.accounts.status.active') },
@@ -965,6 +985,7 @@ const showEditModal = ref(false)
 const editPasswordVisible = ref(false)
 const editPasswordDirty = ref(false)
 const showImportData = ref(false)
+const showSubscriptionImportDialog = ref(false)
 const showDeleteDialog = ref(false)
 const showBatchDeleteDialog = ref(false)
 const showExportDataDialog = ref(false)
@@ -1041,6 +1062,39 @@ const editForm = reactive({
   password: '',
   status: 'active' as 'active' | 'inactive'
 })
+
+const isCreatePrimaryCredentialRequired = computed(() =>
+  isProxyPrimaryCredentialRequired(createForm.protocol)
+)
+const isEditPrimaryCredentialRequired = computed(() =>
+  isProxyPrimaryCredentialRequired(editForm.protocol)
+)
+const isCreatePasswordRequired = computed(() => isProxySecretRequired(createForm.protocol))
+const isEditPasswordRequired = computed(() => isProxySecretRequired(editForm.protocol))
+const createPrimaryCredentialLabel = computed(() =>
+  getProxyPrimaryCredentialLabel(createForm.protocol, t)
+)
+const editPrimaryCredentialLabel = computed(() =>
+  getProxyPrimaryCredentialLabel(editForm.protocol, t)
+)
+const createPrimaryCredentialPlaceholder = computed(() =>
+  getProxyPrimaryCredentialPlaceholder(createForm.protocol, t)
+)
+const editPrimaryCredentialPlaceholder = computed(() =>
+  getProxyPrimaryCredentialPlaceholder(editForm.protocol, t)
+)
+const createPasswordLabel = computed(() => getProxySecretLabel(createForm.protocol, t))
+const editPasswordLabel = computed(() => getProxySecretLabel(editForm.protocol, t))
+const createPasswordPlaceholder = computed(() => getProxySecretPlaceholder(createForm.protocol, t))
+
+const validateProtocolCredentials = (protocol: ProxyProtocol, username: string, password: string) => {
+  const error = validateProxyProtocolCredentials(protocol, username, password, t)
+  if (error) {
+    appStore.showError(error)
+    return false
+  }
+  return true
+}
 
 let abortController: AbortController | null = null
 
@@ -1156,6 +1210,84 @@ const handleDataImported = () => {
   loadProxies()
 }
 
+const openSubscriptionImportDialog = () => {
+  showSubscriptionImportDialog.value = true
+}
+
+const handleSubscriptionImported = () => {
+  showSubscriptionImportDialog.value = false
+  loadProxies()
+}
+
+const encodeBase64Url = (value: string) =>
+  globalThis.btoa(value).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
+
+const decodeBase64Url = (value: string): string | null => {
+  const normalized = value.replace(/-/g, '+').replace(/_/g, '/')
+  const padding = normalized.length % 4
+  const padded = padding === 0 ? normalized : `${normalized}${'='.repeat(4 - padding)}`
+  try {
+    return globalThis.atob(padded)
+  } catch {
+    return null
+  }
+}
+
+const parseShadowsocksUrl = (
+  line: string
+): {
+  protocol: ProxyProtocol
+  host: string
+  port: number
+  username: string
+  password: string
+} | null => {
+  const trimmed = line.trim()
+  if (!/^ss:\/\//i.test(trimmed)) return null
+
+  try {
+    const parsed = new URL(trimmed)
+
+    if ((!parsed.port || !parsed.hostname) && parsed.host && !parsed.username && !parsed.password) {
+      const decodedNode = decodeBase64Url(parsed.host)
+      if (!decodedNode) return null
+      const nested = decodedNode.toLowerCase().startsWith('ss://') ? decodedNode : `ss://${decodedNode}`
+      return parseShadowsocksUrl(nested)
+    }
+
+    const host = parsed.hostname.trim()
+    const portNum = Number.parseInt(parsed.port, 10)
+    if (!host || !Number.isInteger(portNum) || portNum < 1 || portNum > 65535) return null
+
+    let method = ''
+    let password = ''
+
+    if (parsed.password) {
+      method = decodeURIComponent(parsed.username).trim()
+      password = decodeURIComponent(parsed.password).trim()
+    } else {
+      const decodedUserInfo = decodeBase64Url(parsed.username)
+      if (!decodedUserInfo) return null
+      const separatorIndex = decodedUserInfo.indexOf(':')
+      if (separatorIndex <= 0) return null
+      method = decodedUserInfo.slice(0, separatorIndex).trim()
+      password = decodedUserInfo.slice(separatorIndex + 1).trim()
+    }
+
+    if (!method || !password) return null
+
+    return {
+      protocol: 'ss',
+      host,
+      port: portNum,
+      username: method,
+      password
+    }
+  } catch {
+    return null
+  }
+}
+
 // Parse proxy URL: protocol://user:pass@host:port or protocol://host:port
 const parseProxyUrl = (
   line: string
@@ -1168,6 +1300,9 @@ const parseProxyUrl = (
 } | null => {
   const trimmed = line.trim()
   if (!trimmed) return null
+
+  const shadowsocksNode = parseShadowsocksUrl(trimmed)
+  if (shadowsocksNode) return shadowsocksNode
 
   // Regex to parse proxy URL (supports http, https, socks5, socks5h)
   const regex = /^(https?|socks5h?):\/\/(?:([^:@]+):([^@]+)@)?([^:]+):(\d+)$/i
@@ -1258,6 +1393,9 @@ const handleCreateProxy = async () => {
     appStore.showError(t('admin.proxies.portInvalid'))
     return
   }
+  if (!validateProtocolCredentials(createForm.protocol, createForm.username, createForm.password)) {
+    return
+  }
   submitting.value = true
   try {
     await adminAPI.proxies.create({
@@ -1312,6 +1450,9 @@ const handleUpdateProxy = async () => {
   }
   if (editForm.port < 1 || editForm.port > 65535) {
     appStore.showError(t('admin.proxies.portInvalid'))
+    return
+  }
+  if (!validateProtocolCredentials(editForm.protocol, editForm.username, editForm.password)) {
     return
   }
 
@@ -1385,6 +1526,28 @@ const summarizeQualityStatus = (result: ProxyQualityCheckResult): Proxy['quality
   return 'healthy'
 }
 
+const syncQualityConnectivityResult = (proxyId: number, result: ProxyQualityCheckResult) => {
+  const baseStep = result.items.find((item) => item.target === 'base_connectivity')
+  if (baseStep && baseStep.status === 'pass') {
+    applyLatencyResult(proxyId, {
+      success: true,
+      latency_ms: result.base_latency_ms,
+      message: result.summary,
+      ip_address: result.exit_ip,
+      country: result.country,
+      country_code: result.country_code,
+      region: result.region,
+      city: result.city
+    })
+    return
+  }
+
+  applyLatencyResult(proxyId, {
+    success: false,
+    message: baseStep?.message || result.summary
+  })
+}
+
 const applyQualityResult = (proxyId: number, result: ProxyQualityCheckResult) => {
   const target = proxies.value.find((proxy) => proxy.id === proxyId)
   if (!target) return
@@ -1396,8 +1559,9 @@ const applyQualityResult = (proxyId: number, result: ProxyQualityCheckResult) =>
 }
 
 const formatLocation = (proxy: Proxy) => {
-  const parts = [proxy.country, proxy.city].filter(Boolean) as string[]
-  return parts.join(' · ')
+  const parts = [proxy.country, proxy.region, proxy.city].filter(Boolean) as string[]
+  const uniqueParts = parts.filter((part, index) => parts.indexOf(part) === index)
+  return uniqueParts.join(' · ')
 }
 
 const flagUrl = (code: string) =>
@@ -1464,17 +1628,7 @@ const handleQualityCheck = async (proxy: Proxy) => {
     qualityReport.value = result
     showQualityReportDialog.value = true
 
-    const baseStep = result.items.find((item) => item.target === 'base_connectivity')
-    if (baseStep && baseStep.status === 'pass') {
-      applyLatencyResult(proxy.id, {
-        success: true,
-        latency_ms: result.base_latency_ms,
-        message: result.summary,
-        ip_address: result.exit_ip,
-        country: result.country,
-        country_code: result.country_code
-      })
-    }
+    syncQualityConnectivityResult(proxy.id, result)
     applyQualityResult(proxy.id, result)
 
     appStore.showSuccess(
@@ -1506,20 +1660,7 @@ const runBatchProxyQualityChecks = async (ids: number[]) => {
       startQualityCheckingProxy(current)
       try {
         const result = await adminAPI.proxies.checkProxyQuality(current)
-        const target = proxies.value.find((proxy) => proxy.id === current)
-        if (target) {
-          const baseStep = result.items.find((item) => item.target === 'base_connectivity')
-          if (baseStep && baseStep.status === 'pass') {
-            applyLatencyResult(current, {
-              success: true,
-              latency_ms: result.base_latency_ms,
-              message: result.summary,
-              ip_address: result.exit_ip,
-              country: result.country,
-              country_code: result.country_code
-            })
-          }
-        }
+        syncQualityConnectivityResult(current, result)
         applyQualityResult(current, result)
         if (result.challenge_count > 0) {
           challenge++
@@ -1834,6 +1975,15 @@ function buildAuthPart(row: any): string {
 }
 
 function buildProxyUrl(row: any): string {
+  if (row.protocol === 'ss') {
+    const method = typeof row.username === 'string' ? row.username.trim() : ''
+    const password = typeof row.password === 'string' ? row.password.trim() : ''
+    if (method && password) {
+      const credentials = encodeBase64Url(`${method}:${password}`)
+      const tag = row.name ? `#${encodeURIComponent(row.name)}` : ''
+      return `ss://${credentials}@${row.host}:${row.port}${tag}`
+    }
+  }
   return `${row.protocol}://${buildAuthPart(row)}${row.host}:${row.port}`
 }
 

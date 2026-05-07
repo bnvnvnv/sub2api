@@ -4,6 +4,9 @@
 //   - HTTP/HTTPS: 通过 Transport.Proxy 设置
 //   - SOCKS5: 通过 Transport.DialContext 设置（客户端本地解析 DNS）
 //   - SOCKS5H: 通过 Transport.DialContext 设置（代理端远程解析 DNS，推荐）
+//   - SS: 通过 Transport.DialContext 设置（Shadowsocks）
+//   - AnyTLS: 通过 Transport.DialContext 设置（AnyTLS）
+//   - Trojan/VLESS/Hysteria2: 通过 Transport.DialContext 设置
 //
 // 注意：proxyurl.Parse() 会自动将 socks5:// 升级为 socks5h://，
 // 确保 DNS 也由代理端解析，防止 DNS 泄漏。
@@ -17,6 +20,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/Wei-Shaw/sub2api/internal/pkg/proxyprotocol"
 	"golang.org/x/net/proxy"
 )
 
@@ -26,6 +30,9 @@ import (
 //   - http/https: 设置 transport.Proxy
 //   - socks5: 设置 transport.DialContext（客户端本地解析 DNS）
 //   - socks5h: 设置 transport.DialContext（代理端远程解析 DNS，推荐）
+//   - ss: 设置 transport.DialContext（Shadowsocks）
+//   - anytls: 设置 transport.DialContext（AnyTLS）
+//   - trojan/vless/hysteria2: 设置 transport.DialContext
 //
 // 参数：
 //   - transport: 需要配置的 http.Transport
@@ -36,6 +43,9 @@ import (
 func ConfigureTransportProxy(transport *http.Transport, proxyURL *url.URL) error {
 	if proxyURL == nil {
 		return nil
+	}
+	if handled, err := proxyprotocol.ConfigureTransportProxy(transport, proxyURL); handled || err != nil {
+		return err
 	}
 
 	scheme := strings.ToLower(proxyURL.Scheme)

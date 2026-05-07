@@ -1,10 +1,9 @@
 package service
 
 import (
-	"net"
-	"net/url"
-	"strconv"
 	"time"
+
+	"github.com/Wei-Shaw/sub2api/internal/pkg/proxyprotocol"
 )
 
 type Proxy struct {
@@ -25,14 +24,7 @@ func (p *Proxy) IsActive() bool {
 }
 
 func (p *Proxy) URL() string {
-	u := &url.URL{
-		Scheme: p.Protocol,
-		Host:   net.JoinHostPort(p.Host, strconv.Itoa(p.Port)),
-	}
-	if p.Username != "" && p.Password != "" {
-		u.User = url.UserPassword(p.Username, p.Password)
-	}
-	return u.String()
+	return proxyprotocol.BuildURL(p.Protocol, p.Username, p.Password, p.Host, p.Port, p.Name)
 }
 
 type ProxyWithAccountCount struct {

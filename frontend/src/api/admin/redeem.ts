@@ -8,6 +8,7 @@ import type {
   RedeemCode,
   GenerateRedeemCodesRequest,
   RedeemCodeType,
+  SubscriptionQuotaPeriod,
   PaginatedResponse
 } from '@/types'
 
@@ -67,7 +68,8 @@ export async function generate(
   type: RedeemCodeType,
   value: number,
   groupId?: number | null,
-  validityDays?: number
+  validityDays?: number,
+  quotaPeriod?: SubscriptionQuotaPeriod
 ): Promise<RedeemCode[]> {
   const payload: GenerateRedeemCodesRequest = {
     count,
@@ -76,11 +78,16 @@ export async function generate(
   }
 
   // 订阅类型专用字段
-  if (type === 'subscription') {
+  if (type === 'subscription' || type === 'subscription_quota') {
     payload.group_id = groupId
+  }
+  if (type === 'subscription') {
     if (validityDays && validityDays > 0) {
       payload.validity_days = validityDays
     }
+  }
+  if (type === 'subscription_quota' && quotaPeriod) {
+    payload.quota_period = quotaPeriod
   }
 
   const { data } = await apiClient.post<RedeemCode[]>('/admin/redeem-codes/generate', payload)

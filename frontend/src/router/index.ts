@@ -247,6 +247,18 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/openai-web',
+    name: 'OpenAIWeb',
+    component: () => import('@/views/user/OpenAIWebView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: 'OpenAI Web',
+      titleKey: 'openAIWeb.title',
+      descriptionKey: 'openAIWeb.description'
+    }
+  },
+  {
     path: '/purchase',
     name: 'PurchaseSubscription',
     component: () => import('@/views/user/PaymentView.vue'),

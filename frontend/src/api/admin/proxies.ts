@@ -10,6 +10,7 @@ import type {
   ProxyQualityCheckResult,
   CreateProxyRequest,
   UpdateProxyRequest,
+  ProxyProtocol,
   PaginatedResponse,
   AdminDataPayload,
   AdminDataImportResult
@@ -195,7 +196,8 @@ export async function getProxyAccounts(id: number): Promise<ProxyAccountSummary[
  */
 export async function batchCreate(
   proxies: Array<{
-    protocol: string
+    name?: string
+    protocol: ProxyProtocol
     host: string
     port: number
     username?: string

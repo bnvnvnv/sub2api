@@ -170,7 +170,7 @@ func createTestPayload(modelID string) (map[string]any, error) {
 // All account types use full Claude Code client characteristics, only auth header differs
 // modelID is optional - if empty, defaults to claude.DefaultTestModel
 // mode is optional - "compact" routes OpenAI accounts to the /responses/compact probe path
-func (s *AccountTestService) TestAccountConnection(c *gin.Context, accountID int64, modelID string, prompt string, mode string) error {
+func (s *AccountTestService) TestAccountConnection(c *gin.Context, accountID int64, modelID string, prompt string, mode string) (testErr error) {
 	ctx := c.Request.Context()
 
 	// Get account
@@ -178,6 +178,19 @@ func (s *AccountTestService) TestAccountConnection(c *gin.Context, accountID int
 	if err != nil {
 		return s.sendErrorAndEnd(c, "Account not found")
 	}
+	defer func() {
+		if testErr == nil || account == nil || s.accountRepo == nil {
+			return
+		}
+		if account.IsOpenAI() {
+			// OpenAI test paths reconcile 429/401 state themselves; a blanket SetError
+			// would incorrectly re-disable rate-limited accounts after ClearError.
+			return
+		}
+		if setErr := s.accountRepo.SetError(ctx, account.ID, testErr.Error()); setErr != nil {
+			log.Printf("failed to persist account test error for account %d: %v", account.ID, setErr)
+		}
+	}()
 
 	// Route to platform-specific test method
 	if account.IsOpenAI() {

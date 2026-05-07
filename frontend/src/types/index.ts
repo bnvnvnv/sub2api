@@ -2,6 +2,8 @@
  * Core Type Definitions for Sub2API Frontend
  */
 
+import type { ProxyProtocol } from '@/extensions/proxyProtocols'
+
 // ==================== Common Types ====================
 
 export interface SelectOption {
@@ -658,7 +660,7 @@ export interface UpdateGroupRequest {
 export type AccountPlatform = 'anthropic' | 'openai' | 'gemini' | 'antigravity'
 export type AccountType = 'oauth' | 'setup-token' | 'apikey' | 'upstream' | 'bedrock' | 'service_account'
 export type OAuthAddMethod = 'oauth' | 'setup-token'
-export type ProxyProtocol = 'http' | 'https' | 'socks5' | 'socks5h'
+export type { ProxyProtocol } from '@/extensions/proxyProtocols'
 
 // Claude Model type (returned by /v1/models and account models API)
 export interface ClaudeModel {
@@ -720,6 +722,8 @@ export interface ProxyQualityCheckResult {
   exit_ip?: string
   country?: string
   country_code?: string
+  region?: string
+  city?: string
   base_latency_ms?: number
   passed_count: number
   warn_count: number
@@ -1096,7 +1100,8 @@ export interface AdminDataImportResult {
 
 // ==================== Usage & Redeem Types ====================
 
-export type RedeemCodeType = 'balance' | 'concurrency' | 'subscription' | 'invitation'
+export type RedeemCodeType = 'balance' | 'concurrency' | 'subscription' | 'subscription_quota' | 'invitation'
+export type SubscriptionQuotaPeriod = 'daily' | 'weekly' | 'monthly'
 export type UsageRequestType = 'unknown' | 'sync' | 'stream' | 'ws_v2'
 
 export interface UsageLog {
@@ -1106,6 +1111,7 @@ export interface UsageLog {
   account_id: number | null
   request_id: string
   model: string
+  upstream_model?: string | null
   service_tier?: string | null
   reasoning_effort?: string | null
   inbound_endpoint?: string | null
@@ -1222,6 +1228,7 @@ export interface RedeemCode {
   updated_at?: string
   group_id?: number | null // 订阅类型专用
   validity_days?: number // 订阅类型专用
+  quota_period?: SubscriptionQuotaPeriod | '' // 订阅临时额度类型专用
   user?: User
   group?: Group // 关联的分组
 }
@@ -1232,6 +1239,7 @@ export interface GenerateRedeemCodesRequest {
   value: number
   group_id?: number | null // 订阅类型专用
   validity_days?: number // 订阅类型专用
+  quota_period?: SubscriptionQuotaPeriod // 订阅临时额度类型专用
 }
 
 export interface RedeemCodeRequest {
@@ -1427,6 +1435,9 @@ export interface UserSubscription {
   daily_usage_usd: number
   weekly_usage_usd: number
   monthly_usage_usd: number
+  daily_bonus_usd: number
+  weekly_bonus_usd: number
+  monthly_bonus_usd: number
   daily_window_start: string | null
   weekly_window_start: string | null
   monthly_window_start: string | null
@@ -1459,6 +1470,109 @@ export interface SubscriptionProgress {
   } | null
   expires_at: string | null
   days_remaining: number | null
+}
+
+export interface OpenAIWebEntitlement {
+  group_id: number
+  group_name: string
+  group_desc: string
+  access_mode: 'standard' | 'subscription' | string
+  subscription_id?: number | null
+  has_web_chat: boolean
+  has_pro_accounts: boolean
+  default_model: string
+  capability_mode: 'web_chat' | 'pro_model'
+  subscription_end?: string | null
+}
+
+export interface OpenAIWebGroupSummary {
+  id: number
+  name: string
+  description: string
+  platform: string
+}
+
+export interface OpenAIWebAccountSummary {
+  id: number
+  name: string
+  platform: string
+  type: string
+  status: string
+  plan_type?: string
+}
+
+export interface OpenAIWebThread {
+  id: number
+  user_id: number
+  group_id: number
+  account_id: number
+  local_thread_id: string
+  page_session_id: string
+  upstream_conversation_id: string | null
+  upstream_session_id: string | null
+  provider: string
+  title: string
+  requested_model: string
+  capability_mode: 'web_chat' | 'pro_model'
+  history_mode: 'upstream_only' | 'hybrid' | 'server_mirror'
+  cache_policy: 'local_only' | 'local_encrypted'
+  sync_status: 'pending' | 'ready' | 'error'
+  status: 'active' | 'archived' | 'broken'
+  last_synced_at: string | null
+  last_error: string
+  created_at: string
+  updated_at: string
+  group?: OpenAIWebGroupSummary
+  account?: OpenAIWebAccountSummary
+}
+
+export interface OpenAIWebThreadCreateRequest {
+  group_id: number
+  requested_model?: string
+  title?: string
+  cache_policy?: 'local_only' | 'local_encrypted'
+}
+
+export interface OpenAIWebThreadMessageRequest {
+  content: string
+  requested_model?: string
+  reasoning_effort?: string
+  attachments?: OpenAIWebThreadMessageAttachment[]
+}
+
+export interface OpenAIWebThreadMessageUsage {
+  input_tokens: number
+  output_tokens: number
+  cache_read_tokens: number
+  cache_creation_tokens: number
+  image_output_tokens: number
+  total_tokens: number
+}
+
+export interface OpenAIWebThreadMessageImage {
+  data_url?: string
+  mime_type?: string
+  revised_prompt?: string
+  width?: number
+  height?: number
+}
+
+export interface OpenAIWebThreadMessageAttachment {
+  file_name?: string
+  content_type?: string
+  data_url: string
+  width?: number
+  height?: number
+}
+
+export interface OpenAIWebThreadMessageResponse {
+  thread: OpenAIWebThread
+  assistant_text: string
+  assistant_images?: OpenAIWebThreadMessageImage[]
+  request_id?: string
+  response_id?: string | null
+  model: string
+  usage: OpenAIWebThreadMessageUsage
 }
 
 export interface AssignSubscriptionRequest {

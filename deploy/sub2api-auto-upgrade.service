@@ -1,0 +1,13 @@
+[Unit]
+Description=Sub2API source auto-upgrade
+Documentation=https://github.com/Wei-Shaw/sub2api
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/sub2api/auto-upgrade.env
+ExecStart=/usr/bin/env bash /usr/local/bin/sub2api-auto-upgrade
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7

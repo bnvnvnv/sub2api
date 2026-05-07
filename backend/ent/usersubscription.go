@@ -47,6 +47,12 @@ type UserSubscription struct {
 	WeeklyUsageUsd float64 `json:"weekly_usage_usd,omitempty"`
 	// MonthlyUsageUsd holds the value of the "monthly_usage_usd" field.
 	MonthlyUsageUsd float64 `json:"monthly_usage_usd,omitempty"`
+	// DailyBonusUsd holds the value of the "daily_bonus_usd" field.
+	DailyBonusUsd float64 `json:"daily_bonus_usd,omitempty"`
+	// WeeklyBonusUsd holds the value of the "weekly_bonus_usd" field.
+	WeeklyBonusUsd float64 `json:"weekly_bonus_usd,omitempty"`
+	// MonthlyBonusUsd holds the value of the "monthly_bonus_usd" field.
+	MonthlyBonusUsd float64 `json:"monthly_bonus_usd,omitempty"`
 	// AssignedBy holds the value of the "assigned_by" field.
 	AssignedBy *int64 `json:"assigned_by,omitempty"`
 	// AssignedAt holds the value of the "assigned_at" field.
@@ -121,7 +127,7 @@ func (*UserSubscription) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case usersubscription.FieldDailyUsageUsd, usersubscription.FieldWeeklyUsageUsd, usersubscription.FieldMonthlyUsageUsd:
+		case usersubscription.FieldDailyUsageUsd, usersubscription.FieldWeeklyUsageUsd, usersubscription.FieldMonthlyUsageUsd, usersubscription.FieldDailyBonusUsd, usersubscription.FieldWeeklyBonusUsd, usersubscription.FieldMonthlyBonusUsd:
 			values[i] = new(sql.NullFloat64)
 		case usersubscription.FieldID, usersubscription.FieldUserID, usersubscription.FieldGroupID, usersubscription.FieldAssignedBy:
 			values[i] = new(sql.NullInt64)
@@ -237,6 +243,24 @@ func (_m *UserSubscription) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field monthly_usage_usd", values[i])
 			} else if value.Valid {
 				_m.MonthlyUsageUsd = value.Float64
+			}
+		case usersubscription.FieldDailyBonusUsd:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field daily_bonus_usd", values[i])
+			} else if value.Valid {
+				_m.DailyBonusUsd = value.Float64
+			}
+		case usersubscription.FieldWeeklyBonusUsd:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field weekly_bonus_usd", values[i])
+			} else if value.Valid {
+				_m.WeeklyBonusUsd = value.Float64
+			}
+		case usersubscription.FieldMonthlyBonusUsd:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field monthly_bonus_usd", values[i])
+			} else if value.Valid {
+				_m.MonthlyBonusUsd = value.Float64
 			}
 		case usersubscription.FieldAssignedBy:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -363,6 +387,15 @@ func (_m *UserSubscription) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("monthly_usage_usd=")
 	builder.WriteString(fmt.Sprintf("%v", _m.MonthlyUsageUsd))
+	builder.WriteString(", ")
+	builder.WriteString("daily_bonus_usd=")
+	builder.WriteString(fmt.Sprintf("%v", _m.DailyBonusUsd))
+	builder.WriteString(", ")
+	builder.WriteString("weekly_bonus_usd=")
+	builder.WriteString(fmt.Sprintf("%v", _m.WeeklyBonusUsd))
+	builder.WriteString(", ")
+	builder.WriteString("monthly_bonus_usd=")
+	builder.WriteString(fmt.Sprintf("%v", _m.MonthlyBonusUsd))
 	builder.WriteString(", ")
 	if v := _m.AssignedBy; v != nil {
 		builder.WriteString("assigned_by=")

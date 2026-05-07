@@ -3,8 +3,10 @@ package dto
 
 import (
 	"strconv"
+	"strings"
 	"time"
 
+	"github.com/Wei-Shaw/sub2api/internal/pkg/openai"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 )
 
@@ -198,13 +200,15 @@ func AccountFromServiceShallow(a *service.Account) *Account {
 	if a == nil {
 		return nil
 	}
+	credentials := cloneAnyMap(a.Credentials)
+	enrichOpenAIOAuthCredentialsFromIDToken(a.Platform, a.Type, credentials)
 	out := &Account{
 		ID:                      a.ID,
 		Name:                    a.Name,
 		Notes:                   a.Notes,
 		Platform:                a.Platform,
 		Type:                    a.Type,
-		Credentials:             a.Credentials,
+		Credentials:             credentials,
 		Extra:                   a.Extra,
 		ProxyID:                 a.ProxyID,
 		Concurrency:             a.Concurrency,
@@ -357,6 +361,60 @@ func AccountFromServiceShallow(a *service.Account) *Account {
 	}
 
 	return out
+}
+
+func cloneAnyMap(src map[string]any) map[string]any {
+	if src == nil {
+		return nil
+	}
+	dst := make(map[string]any, len(src))
+	for key, value := range src {
+		dst[key] = value
+	}
+	return dst
+}
+
+// enrichOpenAIOAuthCredentialsFromIDToken fills missing display-critical fields
+// from id_token for OpenAI OAuth accounts without mutating stored credentials.
+func enrichOpenAIOAuthCredentialsFromIDToken(platform, accountType string, credentials map[string]any) {
+	if credentials == nil {
+		return
+	}
+	if strings.ToLower(strings.TrimSpace(platform)) != service.PlatformOpenAI {
+		return
+	}
+	if strings.ToLower(strings.TrimSpace(accountType)) != service.AccountTypeOAuth {
+		return
+	}
+
+	idToken, _ := credentials["id_token"].(string)
+	if strings.TrimSpace(idToken) == "" {
+		return
+	}
+
+	claims, err := openai.DecodeIDToken(idToken)
+	if err != nil {
+		return
+	}
+	userInfo := claims.GetUserInfo()
+	if userInfo == nil {
+		return
+	}
+
+	setIfMissing := func(key, value string) {
+		if value == "" {
+			return
+		}
+		if existing, _ := credentials[key].(string); strings.TrimSpace(existing) == "" {
+			credentials[key] = value
+		}
+	}
+
+	setIfMissing("email", userInfo.Email)
+	setIfMissing("plan_type", userInfo.PlanType)
+	setIfMissing("chatgpt_account_id", userInfo.ChatGPTAccountID)
+	setIfMissing("chatgpt_user_id", userInfo.ChatGPTUserID)
+	setIfMissing("organization_id", userInfo.OrganizationID)
 }
 
 func AccountFromService(a *service.Account) *Account {
@@ -533,6 +591,7 @@ func redeemCodeFromServiceBase(rc *service.RedeemCode) RedeemCode {
 		CreatedAt:    rc.CreatedAt,
 		GroupID:      rc.GroupID,
 		ValidityDays: rc.ValidityDays,
+		QuotaPeriod:  rc.QuotaPeriod,
 		User:         UserFromServiceShallow(rc.User),
 		Group:        GroupFromServiceShallow(rc.Group),
 	}
@@ -729,6 +788,9 @@ func userSubscriptionFromServiceBase(sub *service.UserSubscription) UserSubscrip
 		DailyUsageUSD:      sub.DailyUsageUSD,
 		WeeklyUsageUSD:     sub.WeeklyUsageUSD,
 		MonthlyUsageUSD:    sub.MonthlyUsageUSD,
+		DailyBonusUSD:      sub.DailyBonusUSD,
+		WeeklyBonusUSD:     sub.WeeklyBonusUSD,
+		MonthlyBonusUSD:    sub.MonthlyBonusUSD,
 		CreatedAt:          sub.CreatedAt,
 		UpdatedAt:          sub.UpdatedAt,
 		User:               UserFromServiceShallow(sub.User),
