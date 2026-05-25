@@ -1402,7 +1402,7 @@ func init() {
 	// redeemcode.DefaultValidityDays holds the default value on creation for the validity_days field.
 	redeemcode.DefaultValidityDays = redeemcodeDescValidityDays.Default.(int)
 	// redeemcodeDescQuotaPeriod is the schema descriptor for quota_period field.
-	redeemcodeDescQuotaPeriod := redeemcodeFields[10].Descriptor()
+	redeemcodeDescQuotaPeriod := redeemcodeFields[11].Descriptor()
 	// redeemcode.DefaultQuotaPeriod holds the default value on creation for the quota_period field.
 	redeemcode.DefaultQuotaPeriod = redeemcodeDescQuotaPeriod.Default.(string)
 	// redeemcode.QuotaPeriodValidator is a validator for the "quota_period" field. It is called by the builders before save.
