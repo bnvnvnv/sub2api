@@ -123,6 +123,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	}
 	deferredService := service.ProvideDeferredService(accountRepository, timingWheelService)
 	openAIOAuthClient := repository.NewOpenAIOAuthClient()
+	privacyClientFactory := providePrivacyClientFactory()
 	openAIOAuthService := service.ProvideOpenAIOAuthService(proxyRepository, openAIOAuthClient, privacyClientFactory)
 	oAuthRefreshAPI := service.ProvideOAuthRefreshAPI(accountRepository, geminiTokenCache)
 	openAITokenProvider := service.ProvideOpenAITokenProvider(accountRepository, geminiTokenCache, openAIOAuthService, oAuthRefreshAPI)
@@ -148,7 +149,6 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	dashboardHandler := admin.NewDashboardHandler(dashboardService, dashboardAggregationService)
 	proxyExitInfoProber := repository.NewProxyExitInfoProber(configConfig)
 	proxyLatencyCache := repository.NewProxyLatencyCache(redisClient)
-	privacyClientFactory := providePrivacyClientFactory()
 	adminService := service.NewAdminService(userRepository, groupRepository, accountRepository, proxyRepository, apiKeyRepository, redeemCodeRepository, userGroupRateRepository, userRPMCache, billingCacheService, proxyExitInfoProber, proxyLatencyCache, apiKeyAuthCacheInvalidator, client, settingService, subscriptionService, userSubscriptionRepository, privacyClientFactory, openAIGatewayService)
 	adminUserHandler := admin.NewUserHandler(adminService, concurrencyService, serviceUserPlatformQuotaRepository, billingCache)
 	sessionLimitCache := repository.ProvideSessionLimitCache(redisClient, configConfig)

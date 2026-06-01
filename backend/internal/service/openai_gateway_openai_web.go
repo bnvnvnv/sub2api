@@ -513,7 +513,7 @@ func prepareOpenAIWebConversation(
 		return "", parentMessageID, err
 	}
 	if !resp.IsSuccessState() {
-		return "", parentMessageID, newOpenAIImageStatusError(resp, "conversation prepare failed")
+		return "", parentMessageID, newOpenAIImageStatusError(resp, "conversation prepare failed", openAIUpstreamErrorBodyReadLimit)
 	}
 	return strings.TrimSpace(result.ConduitToken), parentMessageID, nil
 }
@@ -921,7 +921,7 @@ func fetchOpenAIWebConversationSnapshot(
 		}
 	}()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, nil, newOpenAIImageStatusError(resp, "conversation poll failed")
+		return nil, nil, newOpenAIImageStatusError(resp, "conversation poll failed", openAIUpstreamErrorBodyReadLimit)
 	}
 
 	body, err := io.ReadAll(resp.Body)
@@ -1157,11 +1157,11 @@ func downloadOpenAIWebConversationImages(
 
 	images := make([]OpenAIWebThreadMessageImage, 0, len(pointers))
 	for _, pointer := range pointers {
-		downloadURL, err := fetchOpenAIImageDownloadURL(ctx, client, headers, conversationID, pointer.Pointer)
+		downloadURL, err := fetchOpenAIImageDownloadURL(ctx, client, headers, conversationID, pointer.Pointer, openAIUpstreamErrorBodyReadLimit)
 		if err != nil {
 			return nil, err
 		}
-		data, err := downloadOpenAIImageBytes(ctx, client, headers, downloadURL)
+		data, err := downloadOpenAIImageBytes(ctx, client, headers, downloadURL, openAIUpstreamErrorBodyReadLimit)
 		if err != nil {
 			return nil, err
 		}
