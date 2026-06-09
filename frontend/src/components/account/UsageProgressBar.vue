@@ -26,7 +26,7 @@
     </div>
 
     <!-- Progress bar row -->
-    <div class="flex items-center gap-1" :title="progressTooltip">
+    <div class="flex items-center gap-1">
       <!-- Label badge (fixed width for alignment) -->
       <span
         :class="['w-[32px] shrink-0 rounded px-1 text-center text-[10px] font-medium', labelClass]"
@@ -43,7 +43,7 @@
       </div>
 
       <!-- Percentage -->
-      <span :class="['w-[46px] shrink-0 text-right text-[10px] font-medium', textClass]">
+      <span :class="['w-[32px] shrink-0 text-right text-[10px] font-medium', textClass]">
         {{ displayPercent }}
       </span>
 
@@ -137,18 +137,7 @@ const barWidth = computed(() => {
 // Display percentage (cap at 999% for readability)
 const displayPercent = computed(() => {
   const percent = Math.round(props.utilization)
-  const value = percent > 999 ? '>999%' : `${percent}%`
-  return t('usage.usedPercentShort', { value })
-})
-
-const progressTooltip = computed(() => {
-  const used = Math.max(0, Math.round(props.utilization))
-  const remaining = Math.max(0, Math.round(100 - Math.min(props.utilization, 100)))
-  return t('usage.usageWindowProgressTooltip', {
-    label: props.label,
-    used,
-    remaining
-  })
+  return percent > 999 ? '>999%' : `${percent}%`
 })
 
 const shouldShowResetTime = computed(() => {
@@ -160,7 +149,7 @@ const shouldShowResetTime = computed(() => {
 const formatResetTime = computed(() => {
   // For rolling windows, when utilization is 0%, treat as immediately available.
   if (props.showNowWhenIdle && props.utilization <= 0) {
-    return '现在'
+    return t('usage.resetNow')
   }
 
   if (!props.resetsAt) return '-'
@@ -168,7 +157,11 @@ const formatResetTime = computed(() => {
   const date = new Date(props.resetsAt)
   const diffMs = date.getTime() - now.value.getTime()
 
-  if (diffMs <= 0) return '现在'
+  // resetsAt 已过期：utilization>0 说明后端窗口数据还没刷新（active poll 没回写），
+  // 显示「待刷新」以区别于真正可用的「现在」。
+  if (diffMs <= 0) {
+    return props.utilization > 0 ? t('usage.resetPending') : t('usage.resetNow')
+  }
 
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
   const diffMins = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
