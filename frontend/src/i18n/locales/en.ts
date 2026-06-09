@@ -153,6 +153,8 @@ export default {
     limitMonthly: 'Monthly Limit',
     // Detail rows
     remainingQuota: 'Remaining Quota',
+    usedPercentShort: 'Used {value}',
+    usageWindowProgressTooltip: '{label} window: {used}% used, about {remaining}% remaining. The bar is colored by used quota; higher usage means closer to the upstream limit.',
     expiresAt: 'Expires At',
     todayExpires: '(expires today)',
     daysLeft: '({days} days)',

@@ -153,6 +153,8 @@ export default {
     limitMonthly: '月限额',
     // Detail rows
     remainingQuota: '剩余额度',
+    usedPercentShort: '已用 {value}',
+    usageWindowProgressTooltip: '{label} 窗口：已用 {used}%，剩余约 {remaining}%。进度条按已用量着色，用量越高越接近上游限额。',
     expiresAt: '过期时间',
     todayExpires: '(今日到期)',
     daysLeft: '({days} 天)',

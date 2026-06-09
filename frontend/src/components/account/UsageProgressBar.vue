@@ -26,7 +26,7 @@
     </div>
 
     <!-- Progress bar row -->
-    <div class="flex items-center gap-1">
+    <div class="flex items-center gap-1" :title="progressTooltip">
       <!-- Label badge (fixed width for alignment) -->
       <span
         :class="['w-[32px] shrink-0 rounded px-1 text-center text-[10px] font-medium', labelClass]"
@@ -43,7 +43,7 @@
       </div>
 
       <!-- Percentage -->
-      <span :class="['w-[32px] shrink-0 text-right text-[10px] font-medium', textClass]">
+      <span :class="['w-[46px] shrink-0 text-right text-[10px] font-medium', textClass]">
         {{ displayPercent }}
       </span>
 
@@ -137,7 +137,18 @@ const barWidth = computed(() => {
 // Display percentage (cap at 999% for readability)
 const displayPercent = computed(() => {
   const percent = Math.round(props.utilization)
-  return percent > 999 ? '>999%' : `${percent}%`
+  const value = percent > 999 ? '>999%' : `${percent}%`
+  return t('usage.usedPercentShort', { value })
+})
+
+const progressTooltip = computed(() => {
+  const used = Math.max(0, Math.round(props.utilization))
+  const remaining = Math.max(0, Math.round(100 - Math.min(props.utilization, 100)))
+  return t('usage.usageWindowProgressTooltip', {
+    label: props.label,
+    used,
+    remaining
+  })
 })
 
 const shouldShowResetTime = computed(() => {
