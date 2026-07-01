@@ -17,6 +17,7 @@ type AdminHandlers struct {
 	OpenAIOAuth            *admin.OpenAIOAuthHandler
 	GeminiOAuth            *admin.GeminiOAuthHandler
 	AntigravityOAuth       *admin.AntigravityOAuthHandler
+	GrokOAuth              *admin.GrokOAuthHandler
 	Proxy                  *admin.ProxyHandler
 	ProxySubscription      *admin.ProxySubscriptionHandler
 	Redeem                 *admin.RedeemHandler
