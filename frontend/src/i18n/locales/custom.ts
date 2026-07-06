@@ -21,119 +21,6 @@ const common = {
   }
 } as const
 
-const openAIWeb = {
-  en: {
-    title: 'OpenAI Web',
-    description: 'Use eligible subscribed OpenAI accounts in a web-style chat page',
-    noEligibleTitle: 'No OpenAI Web access available',
-    noEligibleDesc: 'Your current groups do not have an eligible OpenAI account for web chat. Contact the administrator if you believe this is incorrect.',
-    newChat: 'New Chat',
-    createUnavailableDesc: 'No eligible model or account is currently available for starting a new chat.',
-    historyTitle: 'History',
-    historyEmptyTitle: 'No conversations yet',
-    historyEmptyDesc: 'Start a new chat and your local conversation history will appear here.',
-    untitledThread: 'Untitled chat',
-    newChatTitle: 'New chat',
-    chatModelLabel: 'Chat model',
-    reasoningEffortLabel: 'Reasoning effort',
-    reasoningEffortAuto: 'Auto reasoning',
-    reasoningEffort: {
-      low: 'Low',
-      medium: 'Medium',
-      high: 'High',
-      xhigh: 'Extra high'
-    },
-    archive: 'Archive',
-    archiveSuccess: 'Conversation archived',
-    archiveFailed: 'Failed to archive conversation',
-    emptyChatTitle: 'No messages yet',
-    emptyChatDesc: 'This conversation is ready to use {model}. Send a message to continue.',
-    newChatIntro: 'Ask anything, or request an image in natural language.',
-    modelAutoResolved: 'Auto model',
-    userLabel: 'You',
-    assistantLabel: 'Assistant',
-    pendingReply: 'Generating reply...',
-    failedReply: 'Reply failed',
-    previewImage: 'Preview image',
-    downloadImage: 'Download image',
-    addImages: 'Add images',
-    clearImages: 'Clear images',
-    removeImage: 'Remove image',
-    imageAttachment: 'Image attachment',
-    imageCountTag: '{count} images',
-    assistantImageAlt: 'Generated image',
-    imageConversationTitle: 'Image conversation',
-    imageDimensionsTag: '{width}x{height}',
-    composerPlaceholder: 'Message OpenAI Web...',
-    failedToLoad: 'Failed to load OpenAI Web data',
-    createFailed: 'Failed to create conversation',
-    noMatchingGroupForModel: 'No eligible account group is available for {model}',
-    emptyAssistantReply: 'The assistant returned an empty reply.',
-    sendFailed: 'Failed to send message',
-    attachmentLimitReached: 'You can attach at most {count} images',
-    attachmentReadFailed: 'Failed to read image attachment',
-    attachmentTooLarge: 'Image is too large. Maximum size is {size}',
-    attachmentTypeInvalid: 'Only image files are supported',
-    localCacheDisabledWarning: 'Local conversation cache is unavailable in this browser.',
-    localCacheImageWarning: 'Image content is stored only in the local browser cache.'
-  },
-  zh: {
-    title: 'OpenAI Web',
-    description: '通过页面使用订阅中的 OpenAI 账号进行网页式聊天',
-    noEligibleTitle: '暂无可用的 OpenAI Web 权限',
-    noEligibleDesc: '当前分组没有可用于网页聊天的 OpenAI 账号。如果你认为这是配置问题，请联系管理员。',
-    newChat: '新聊天',
-    createUnavailableDesc: '当前没有可用于新聊天的模型或账号。',
-    historyTitle: '历史记录',
-    historyEmptyTitle: '暂无会话',
-    historyEmptyDesc: '开始新聊天后，本地会话历史会显示在这里。',
-    untitledThread: '未命名会话',
-    newChatTitle: '新聊天',
-    chatModelLabel: '聊天模型',
-    reasoningEffortLabel: '思考强度',
-    reasoningEffortAuto: '自动思考',
-    reasoningEffort: {
-      low: '低',
-      medium: '中',
-      high: '高',
-      xhigh: '极高'
-    },
-    archive: '归档',
-    archiveSuccess: '会话已归档',
-    archiveFailed: '会话归档失败',
-    emptyChatTitle: '暂无消息',
-    emptyChatDesc: '该会话已准备使用 {model}。发送消息即可继续。',
-    newChatIntro: '可以直接提问，也可以用自然语言要求生成图片。',
-    modelAutoResolved: '自动模型',
-    userLabel: '你',
-    assistantLabel: '助手',
-    pendingReply: '正在生成回复...',
-    failedReply: '回复失败',
-    previewImage: '预览图片',
-    downloadImage: '下载图片',
-    addImages: '添加图片',
-    clearImages: '清空图片',
-    removeImage: '移除图片',
-    imageAttachment: '图片附件',
-    imageCountTag: '{count} 张图片',
-    assistantImageAlt: '生成图片',
-    imageConversationTitle: '图片会话',
-    imageDimensionsTag: '{width}x{height}',
-    composerPlaceholder: '发送消息给 OpenAI Web...',
-    failedToLoad: '加载 OpenAI Web 数据失败',
-    createFailed: '创建会话失败',
-    noMatchingGroupForModel: '没有可用于 {model} 的账号分组',
-    emptyAssistantReply: '助手返回了空回复。',
-    sendFailed: '发送消息失败',
-    attachmentLimitReached: '最多只能添加 {count} 张图片',
-    attachmentReadFailed: '读取图片失败',
-    attachmentTooLarge: '图片过大，最大支持 {size}',
-    attachmentTypeInvalid: '仅支持图片文件',
-    localCacheDisabledWarning: '当前浏览器无法使用本地会话缓存。',
-    localCacheImageWarning: '图片内容仅保存在当前浏览器本地缓存中。'
-  }
-} as const
-
 const admin = {
   en: {
     accounts: {
@@ -438,18 +325,10 @@ const admin = {
 const messages: Record<'en' | 'zh', CustomLocaleMessages> = {
   en: {
     common: common.en,
-    nav: {
-      openAIWeb: 'OpenAI Web'
-    },
-    openAIWeb: openAIWeb.en,
     admin: admin.en
   },
   zh: {
     common: common.zh,
-    nav: {
-      openAIWeb: 'OpenAI Web'
-    },
-    openAIWeb: openAIWeb.zh,
     admin: admin.zh
   }
 }

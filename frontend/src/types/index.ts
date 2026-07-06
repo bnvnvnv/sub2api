@@ -229,6 +229,10 @@ export interface PublicSettings {
   google_oauth_enabled: boolean
   backend_mode_enabled: boolean
   version: string
+  // 服务器全局时区（IANA 名称与当前 UTC 偏移），高峰时段等服务端本地时间窗口的展示标注用；
+  // 可选：注入的 __APP_CONFIG__ 旧缓存可能缺失
+  server_timezone?: string
+  server_utc_offset?: string
   balance_low_notify_enabled: boolean
   account_quota_notify_enabled: boolean
   balance_low_notify_threshold: number
@@ -520,6 +524,11 @@ export interface Group {
   image_price_1k: number | null
   image_price_2k: number | null
   image_price_4k: number | null
+  // 高峰时段倍率配置
+  peak_rate_enabled: boolean
+  peak_start: string
+  peak_end: string
+  peak_rate_multiplier: number
   // Claude Code 客户端限制
   claude_code_only: boolean
   fallback_group_id: number | null
@@ -638,6 +647,10 @@ export interface CreateGroupRequest {
   image_price_1k?: number | null
   image_price_2k?: number | null
   image_price_4k?: number | null
+  peak_rate_enabled?: boolean
+  peak_start?: string
+  peak_end?: string
+  peak_rate_multiplier?: number
   claude_code_only?: boolean
   fallback_group_id?: number | null
   fallback_group_id_on_invalid_request?: number | null
@@ -673,6 +686,10 @@ export interface UpdateGroupRequest {
   image_price_1k?: number | null
   image_price_2k?: number | null
   image_price_4k?: number | null
+  peak_rate_enabled?: boolean
+  peak_start?: string
+  peak_end?: string
+  peak_rate_multiplier?: number
   claude_code_only?: boolean
   fallback_group_id?: number | null
   fallback_group_id_on_invalid_request?: number | null
@@ -971,6 +988,7 @@ export interface AccountUsageInfo {
   five_hour: UsageProgress | null
   seven_day: UsageProgress | null
   seven_day_sonnet: UsageProgress | null
+  seven_day_fable?: UsageProgress | null
   gemini_shared_daily?: UsageProgress | null
   gemini_pro_daily?: UsageProgress | null
   gemini_flash_daily?: UsageProgress | null
@@ -1610,7 +1628,7 @@ export interface UserSubscription {
   id: number
   user_id: number
   group_id: number
-  status: 'active' | 'expired' | 'revoked'
+  status: 'active' | 'expired' | 'revoked' | 'suspended'
   starts_at: string
   daily_usage_usd: number
   weekly_usage_usd: number
@@ -1653,109 +1671,6 @@ export interface SubscriptionProgress {
   days_remaining: number | null
 }
 
-export interface OpenAIWebEntitlement {
-  group_id: number
-  group_name: string
-  group_desc: string
-  access_mode: 'standard' | 'subscription' | string
-  subscription_id?: number | null
-  has_web_chat: boolean
-  has_pro_accounts: boolean
-  default_model: string
-  capability_mode: 'web_chat' | 'pro_model'
-  subscription_end?: string | null
-}
-
-export interface OpenAIWebGroupSummary {
-  id: number
-  name: string
-  description: string
-  platform: string
-}
-
-export interface OpenAIWebAccountSummary {
-  id: number
-  name: string
-  platform: string
-  type: string
-  status: string
-  plan_type?: string
-}
-
-export interface OpenAIWebThread {
-  id: number
-  user_id: number
-  group_id: number
-  account_id: number
-  local_thread_id: string
-  page_session_id: string
-  upstream_conversation_id: string | null
-  upstream_session_id: string | null
-  provider: string
-  title: string
-  requested_model: string
-  capability_mode: 'web_chat' | 'pro_model'
-  history_mode: 'upstream_only' | 'hybrid' | 'server_mirror'
-  cache_policy: 'local_only' | 'local_encrypted'
-  sync_status: 'pending' | 'ready' | 'error'
-  status: 'active' | 'archived' | 'broken'
-  last_synced_at: string | null
-  last_error: string
-  created_at: string
-  updated_at: string
-  group?: OpenAIWebGroupSummary
-  account?: OpenAIWebAccountSummary
-}
-
-export interface OpenAIWebThreadCreateRequest {
-  group_id: number
-  requested_model?: string
-  title?: string
-  cache_policy?: 'local_only' | 'local_encrypted'
-}
-
-export interface OpenAIWebThreadMessageRequest {
-  content: string
-  requested_model?: string
-  reasoning_effort?: string
-  attachments?: OpenAIWebThreadMessageAttachment[]
-}
-
-export interface OpenAIWebThreadMessageUsage {
-  input_tokens: number
-  output_tokens: number
-  cache_read_tokens: number
-  cache_creation_tokens: number
-  image_output_tokens: number
-  total_tokens: number
-}
-
-export interface OpenAIWebThreadMessageImage {
-  data_url?: string
-  mime_type?: string
-  revised_prompt?: string
-  width?: number
-  height?: number
-}
-
-export interface OpenAIWebThreadMessageAttachment {
-  file_name?: string
-  content_type?: string
-  data_url: string
-  width?: number
-  height?: number
-}
-
-export interface OpenAIWebThreadMessageResponse {
-  thread: OpenAIWebThread
-  assistant_text: string
-  assistant_images?: OpenAIWebThreadMessageImage[]
-  request_id?: string
-  response_id?: string | null
-  model: string
-  usage: OpenAIWebThreadMessageUsage
-}
-
 export interface AssignSubscriptionRequest {
   user_id: number
   group_id: number
@@ -1785,6 +1700,11 @@ export interface UserErrorRequest {
   message: string
   key_name: string
   key_deleted: boolean
+  client_ip?: string
+  group_name?: string
+  request_type?: number
+  stream?: boolean
+  user_agent?: string
 }
 
 export interface UserErrorRequestDetail extends UserErrorRequest {
@@ -1802,6 +1722,9 @@ export interface UserErrorListParams {
   status_code?: number
   category?: string
   api_key_id?: number
+  // 服务端排序,列白名单见后端 opsErrorLogsOrderBy(created_at/model/status_code)
+  sort_by?: string
+  sort_order?: 'asc' | 'desc'
 }
 
 export interface UsageQueryParams {
