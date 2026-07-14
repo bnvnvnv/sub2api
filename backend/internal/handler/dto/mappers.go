@@ -3,10 +3,8 @@ package dto
 
 import (
 	"strconv"
-	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/pkg/openai"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 )
 
@@ -218,9 +216,7 @@ func AccountFromServiceShallow(a *service.Account) *Account {
 	if a == nil {
 		return nil
 	}
-	credentials := cloneAnyMap(a.Credentials)
-	enrichOpenAIOAuthCredentialsFromIDToken(a.Platform, a.Type, credentials)
-	redactedCreds, credsStatus := RedactCredentials(credentials)
+	redactedCreds, credsStatus := RedactCredentials(a.Credentials)
 	out := &Account{
 		ID:                      a.ID,
 		Name:                    a.Name,
@@ -385,60 +381,6 @@ func AccountFromServiceShallow(a *service.Account) *Account {
 	}
 
 	return out
-}
-
-func cloneAnyMap(src map[string]any) map[string]any {
-	if src == nil {
-		return nil
-	}
-	dst := make(map[string]any, len(src))
-	for key, value := range src {
-		dst[key] = value
-	}
-	return dst
-}
-
-// enrichOpenAIOAuthCredentialsFromIDToken fills missing display-critical fields
-// from id_token for OpenAI OAuth accounts without mutating stored credentials.
-func enrichOpenAIOAuthCredentialsFromIDToken(platform, accountType string, credentials map[string]any) {
-	if credentials == nil {
-		return
-	}
-	if strings.ToLower(strings.TrimSpace(platform)) != service.PlatformOpenAI {
-		return
-	}
-	if strings.ToLower(strings.TrimSpace(accountType)) != service.AccountTypeOAuth {
-		return
-	}
-
-	idToken, _ := credentials["id_token"].(string)
-	if strings.TrimSpace(idToken) == "" {
-		return
-	}
-
-	claims, err := openai.DecodeIDToken(idToken)
-	if err != nil {
-		return
-	}
-	userInfo := claims.GetUserInfo()
-	if userInfo == nil {
-		return
-	}
-
-	setIfMissing := func(key, value string) {
-		if value == "" {
-			return
-		}
-		if existing, _ := credentials[key].(string); strings.TrimSpace(existing) == "" {
-			credentials[key] = value
-		}
-	}
-
-	setIfMissing("email", userInfo.Email)
-	setIfMissing("plan_type", userInfo.PlanType)
-	setIfMissing("chatgpt_account_id", userInfo.ChatGPTAccountID)
-	setIfMissing("chatgpt_user_id", userInfo.ChatGPTUserID)
-	setIfMissing("organization_id", userInfo.OrganizationID)
 }
 
 func AccountFromService(a *service.Account) *Account {
@@ -620,7 +562,6 @@ func redeemCodeFromServiceBase(rc *service.RedeemCode) RedeemCode {
 		ExpiresAt:    rc.ExpiresAt,
 		GroupID:      rc.GroupID,
 		ValidityDays: rc.ValidityDays,
-		QuotaPeriod:  rc.QuotaPeriod,
 		User:         UserFromServiceShallow(rc.User),
 		Group:        GroupFromServiceShallow(rc.Group),
 	}
@@ -658,54 +599,55 @@ func usageLogFromServiceUser(l *service.UsageLog) UsageLog {
 		requestedModel = l.Model
 	}
 	return UsageLog{
-		ID:                    l.ID,
-		UserID:                l.UserID,
-		APIKeyID:              l.APIKeyID,
-		AccountID:             l.AccountID,
-		RequestID:             l.RequestID,
-		Model:                 requestedModel,
-		ServiceTier:           l.ServiceTier,
-		ReasoningEffort:       l.ReasoningEffort,
-		InboundEndpoint:       l.InboundEndpoint,
-		GroupID:               l.GroupID,
-		SubscriptionID:        l.SubscriptionID,
-		InputTokens:           l.InputTokens,
-		OutputTokens:          l.OutputTokens,
-		CacheCreationTokens:   l.CacheCreationTokens,
-		CacheReadTokens:       l.CacheReadTokens,
-		CacheCreation5mTokens: l.CacheCreation5mTokens,
-		CacheCreation1hTokens: l.CacheCreation1hTokens,
-		InputCost:             l.InputCost,
-		OutputCost:            l.OutputCost,
-		CacheCreationCost:     l.CacheCreationCost,
-		CacheReadCost:         l.CacheReadCost,
-		TotalCost:             l.TotalCost,
-		ActualCost:            l.ActualCost,
-		RateMultiplier:        l.RateMultiplier,
-		BillingType:           l.BillingType,
-		RequestType:           requestType.String(),
-		Stream:                stream,
-		OpenAIWSMode:          openAIWSMode,
-		DurationMs:            l.DurationMs,
-		FirstTokenMs:          l.FirstTokenMs,
-		ImageCount:            l.ImageCount,
-		ImageSize:             l.ImageSize,
-		ImageInputSize:        l.ImageInputSize,
-		ImageOutputSize:       l.ImageOutputSize,
-		ImageOutputTokens:     l.ImageOutputTokens,
-		ImageOutputCost:       l.ImageOutputCost,
-		ImageSizeSource:       l.ImageSizeSource,
-		ImageSizeBreakdown:    l.ImageSizeBreakdown,
-		MediaType:             l.MediaType,
-		UserAgent:             l.UserAgent,
-		IPAddress:             l.IPAddress,
-		CacheTTLOverridden:    l.CacheTTLOverridden,
-		BillingMode:           l.BillingMode,
-		CreatedAt:             l.CreatedAt,
-		User:                  UserFromServiceShallow(l.User),
-		APIKey:                APIKeyFromService(l.APIKey),
-		Group:                 GroupFromServiceShallow(l.Group),
-		Subscription:          UserSubscriptionFromService(l.Subscription),
+		ID:                        l.ID,
+		UserID:                    l.UserID,
+		APIKeyID:                  l.APIKeyID,
+		AccountID:                 l.AccountID,
+		RequestID:                 l.RequestID,
+		Model:                     requestedModel,
+		ServiceTier:               l.ServiceTier,
+		ReasoningEffort:           l.ReasoningEffort,
+		InboundEndpoint:           l.InboundEndpoint,
+		GroupID:                   l.GroupID,
+		SubscriptionID:            l.SubscriptionID,
+		InputTokens:               l.InputTokens,
+		OutputTokens:              l.OutputTokens,
+		CacheCreationTokens:       l.CacheCreationTokens,
+		CacheReadTokens:           l.CacheReadTokens,
+		CacheCreation5mTokens:     l.CacheCreation5mTokens,
+		CacheCreation1hTokens:     l.CacheCreation1hTokens,
+		InputCost:                 l.InputCost,
+		OutputCost:                l.OutputCost,
+		CacheCreationCost:         l.CacheCreationCost,
+		CacheReadCost:             l.CacheReadCost,
+		TotalCost:                 l.TotalCost,
+		ActualCost:                l.ActualCost,
+		RateMultiplier:            l.RateMultiplier,
+		LongContextBillingApplied: l.LongContextBillingApplied,
+		BillingType:               l.BillingType,
+		RequestType:               requestType.String(),
+		Stream:                    stream,
+		OpenAIWSMode:              openAIWSMode,
+		DurationMs:                l.DurationMs,
+		FirstTokenMs:              l.FirstTokenMs,
+		ImageCount:                l.ImageCount,
+		ImageSize:                 l.ImageSize,
+		ImageInputSize:            l.ImageInputSize,
+		ImageOutputSize:           l.ImageOutputSize,
+		ImageOutputTokens:         l.ImageOutputTokens,
+		ImageOutputCost:           l.ImageOutputCost,
+		ImageSizeSource:           l.ImageSizeSource,
+		ImageSizeBreakdown:        l.ImageSizeBreakdown,
+		MediaType:                 l.MediaType,
+		UserAgent:                 l.UserAgent,
+		IPAddress:                 l.IPAddress,
+		CacheTTLOverridden:        l.CacheTTLOverridden,
+		BillingMode:               l.BillingMode,
+		CreatedAt:                 l.CreatedAt,
+		User:                      UserFromServiceShallow(l.User),
+		APIKey:                    APIKeyFromService(l.APIKey),
+		Group:                     GroupFromServiceShallow(l.Group),
+		Subscription:              UserSubscriptionFromService(l.Subscription),
 	}
 }
 
@@ -828,9 +770,6 @@ func userSubscriptionFromServiceBase(sub *service.UserSubscription) UserSubscrip
 		DailyUsageUSD:      sub.DailyUsageUSD,
 		WeeklyUsageUSD:     sub.WeeklyUsageUSD,
 		MonthlyUsageUSD:    sub.MonthlyUsageUSD,
-		DailyBonusUSD:      sub.DailyBonusUSD,
-		WeeklyBonusUSD:     sub.WeeklyBonusUSD,
-		MonthlyBonusUSD:    sub.MonthlyBonusUSD,
 		CreatedAt:          sub.CreatedAt,
 		UpdatedAt:          sub.UpdatedAt,
 		RevokedAt:          sub.DeletedAt,

@@ -66,34 +66,6 @@ func TestCalculateProgress_DailyUsage(t *testing.T) {
 	assert.Equal(t, dailyStart, progress.Daily.WindowStart)
 }
 
-func TestCalculateProgress_DailyBonusExtendsLimit(t *testing.T) {
-	svc := newTestSubscriptionService()
-	now := time.Now()
-	dailyStart := now.Add(-12 * time.Hour)
-
-	sub := &UserSubscription{
-		ID:               1,
-		ExpiresAt:        now.Add(10 * 24 * time.Hour),
-		DailyUsageUSD:    12.0,
-		DailyBonusUSD:    5.0,
-		DailyWindowStart: ptrTime(dailyStart),
-	}
-	group := &Group{
-		Name:          "Pro",
-		DailyLimitUSD: ptrFloat64(10.0),
-	}
-
-	progress := svc.calculateProgress(sub, group)
-
-	require.NotNil(t, progress.Daily)
-	assert.Equal(t, 15.0, progress.Daily.LimitUSD)
-	assert.Equal(t, 12.0, progress.Daily.UsedUSD)
-	assert.Equal(t, 3.0, progress.Daily.RemainingUSD)
-	assert.Equal(t, 80.0, progress.Daily.Percentage)
-	assert.True(t, sub.CheckDailyLimit(group, 3.0))
-	assert.False(t, sub.CheckDailyLimit(group, 3.01))
-}
-
 func TestCalculateProgress_DailyCardUsesExpiryAsDailyResetTime(t *testing.T) {
 	svc := newTestSubscriptionService()
 	startsAt := time.Now().Add(-12 * time.Hour)

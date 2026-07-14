@@ -220,19 +220,16 @@
                   <div class="h-1.5 flex-1 rounded-full bg-gray-200 dark:bg-dark-600">
                     <div
                       class="h-1.5 rounded-full transition-all"
-                      :class="getProgressClass(row.daily_usage_usd, effectiveSubscriptionLimit(row, 'daily'))"
+                      :class="getProgressClass(row.daily_usage_usd, row.group?.daily_limit_usd)"
                       :style="{
-                        width: getProgressWidth(row.daily_usage_usd, effectiveSubscriptionLimit(row, 'daily'))
+                        width: getProgressWidth(row.daily_usage_usd, row.group?.daily_limit_usd)
                       }"
                     ></div>
                   </div>
                   <span class="usage-amount">
                     ${{ row.daily_usage_usd?.toFixed(2) || '0.00' }}
                     <span class="text-gray-400">/</span>
-                    ${{ effectiveSubscriptionLimit(row, 'daily')?.toFixed(2) }}
-                    <span v-if="row.daily_bonus_usd > 0" class="text-emerald-600 dark:text-emerald-400">
-                      (+${{ row.daily_bonus_usd.toFixed(2) }})
-                    </span>
+                    ${{ row.group?.daily_limit_usd?.toFixed(2) }}
                   </span>
                 </div>
                 <div class="reset-info" v-if="row.daily_window_start">
@@ -260,19 +257,16 @@
                   <div class="h-1.5 flex-1 rounded-full bg-gray-200 dark:bg-dark-600">
                     <div
                       class="h-1.5 rounded-full transition-all"
-                      :class="getProgressClass(row.weekly_usage_usd, effectiveSubscriptionLimit(row, 'weekly'))"
+                      :class="getProgressClass(row.weekly_usage_usd, row.group?.weekly_limit_usd)"
                       :style="{
-                        width: getProgressWidth(row.weekly_usage_usd, effectiveSubscriptionLimit(row, 'weekly'))
+                        width: getProgressWidth(row.weekly_usage_usd, row.group?.weekly_limit_usd)
                       }"
                     ></div>
                   </div>
                   <span class="usage-amount">
                     ${{ row.weekly_usage_usd?.toFixed(2) || '0.00' }}
                     <span class="text-gray-400">/</span>
-                    ${{ effectiveSubscriptionLimit(row, 'weekly')?.toFixed(2) }}
-                    <span v-if="row.weekly_bonus_usd > 0" class="text-emerald-600 dark:text-emerald-400">
-                      (+${{ row.weekly_bonus_usd.toFixed(2) }})
-                    </span>
+                    ${{ row.group?.weekly_limit_usd?.toFixed(2) }}
                   </span>
                 </div>
                 <div class="reset-info" v-if="row.weekly_window_start">
@@ -300,19 +294,16 @@
                   <div class="h-1.5 flex-1 rounded-full bg-gray-200 dark:bg-dark-600">
                     <div
                       class="h-1.5 rounded-full transition-all"
-                      :class="getProgressClass(row.monthly_usage_usd, effectiveSubscriptionLimit(row, 'monthly'))"
+                      :class="getProgressClass(row.monthly_usage_usd, row.group?.monthly_limit_usd)"
                       :style="{
-                        width: getProgressWidth(row.monthly_usage_usd, effectiveSubscriptionLimit(row, 'monthly'))
+                        width: getProgressWidth(row.monthly_usage_usd, row.group?.monthly_limit_usd)
                       }"
                     ></div>
                   </div>
                   <span class="usage-amount">
                     ${{ row.monthly_usage_usd?.toFixed(2) || '0.00' }}
                     <span class="text-gray-400">/</span>
-                    ${{ effectiveSubscriptionLimit(row, 'monthly')?.toFixed(2) }}
-                    <span v-if="row.monthly_bonus_usd > 0" class="text-emerald-600 dark:text-emerald-400">
-                      (+${{ row.monthly_bonus_usd.toFixed(2) }})
-                    </span>
+                    ${{ row.group?.monthly_limit_usd?.toFixed(2) }}
                   </span>
                 </div>
                 <div class="reset-info" v-if="row.monthly_window_start">
@@ -673,60 +664,16 @@
       @cancel="showRestoreDialog = false"
     />
 
-    <!-- Reset Quota Dialog -->
-    <BaseDialog
+    <!-- Reset Quota Confirmation Dialog -->
+    <ConfirmDialog
       :show="showResetQuotaConfirm"
       :title="t('admin.subscriptions.resetQuotaTitle')"
-      width="narrow"
-      @close="closeResetQuotaDialog()"
-    >
-      <div class="space-y-4">
-        <p class="text-sm text-gray-600 dark:text-gray-300">
-          {{ t('admin.subscriptions.resetQuotaTarget', { user: resettingSubscription?.user?.email || '-' }) }}
-        </p>
-
-        <div class="space-y-2">
-          <label
-            v-for="option in resetQuotaOptions"
-            :key="option.key"
-            class="flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors"
-            :class="resetQuotaForm[option.key]
-              ? 'border-primary-300 bg-primary-50 dark:border-primary-700 dark:bg-primary-900/20'
-              : 'border-gray-200 hover:bg-gray-50 dark:border-dark-600 dark:hover:bg-dark-700/50'"
-          >
-            <input
-              v-model="resetQuotaForm[option.key]"
-              type="checkbox"
-              class="mt-1 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 dark:border-dark-500"
-            />
-            <span class="min-w-0">
-              <span class="block text-sm font-medium text-gray-900 dark:text-white">{{ option.label }}</span>
-              <span class="block text-xs text-gray-500 dark:text-gray-400">{{ option.description }}</span>
-            </span>
-          </label>
-        </div>
-
-        <p v-if="!hasResetQuotaSelection" class="text-sm text-red-600 dark:text-red-400">
-          {{ t('admin.subscriptions.resetQuotaSelectAtLeastOne') }}
-        </p>
-      </div>
-
-      <template #footer>
-        <div class="flex justify-end gap-3">
-          <button type="button" class="btn btn-secondary" :disabled="resettingQuota" @click="closeResetQuotaDialog()">
-            {{ t('common.cancel') }}
-          </button>
-          <button
-            type="button"
-            class="btn btn-primary"
-            :disabled="resettingQuota || !hasResetQuotaSelection"
-            @click="confirmResetQuota"
-          >
-            {{ resettingQuota ? t('common.processing') : t('admin.subscriptions.resetQuota') }}
-          </button>
-        </div>
-      </template>
-    </BaseDialog>
+      :message="t('admin.subscriptions.resetQuotaConfirm', { user: resettingSubscription?.user?.email })"
+      :confirm-text="t('admin.subscriptions.resetQuota')"
+      :cancel-text="t('common.cancel')"
+      @confirm="confirmResetQuota"
+      @cancel="showResetQuotaConfirm = false"
+    />
     <!-- Subscription Guide Modal -->
     <teleport to="body">
       <transition name="modal">
@@ -818,7 +765,6 @@ import type { UserSubscription, Group, GroupPlatform, SubscriptionType } from '@
 import type { SimpleUser } from '@/api/admin/usage'
 import type { Column } from '@/components/common/types'
 import { formatDateOnly } from '@/utils/format'
-import { getEffectiveSubscriptionLimit } from '@/utils/subscriptionQuota'
 import { getPersistedPageSize } from '@/composables/usePersistedPageSize'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import TablePageLayout from '@/components/layout/TablePageLayout.vue'
@@ -1021,42 +967,6 @@ const resettingQuota = ref(false)
 const extendingSubscription = ref<UserSubscription | null>(null)
 const revokingSubscription = ref<UserSubscription | null>(null)
 const restoringSubscription = ref<UserSubscription | null>(null)
-
-type ResetQuotaWindow = 'daily' | 'weekly' | 'monthly'
-
-const resetQuotaForm = reactive<Record<ResetQuotaWindow, boolean>>({
-  daily: true,
-  weekly: true,
-  monthly: true
-})
-
-const resetQuotaOptions = computed<Array<{ key: ResetQuotaWindow; label: string; description: string }>>(() => [
-  {
-    key: 'daily',
-    label: t('admin.subscriptions.resetQuotaDaily'),
-    description: t('admin.subscriptions.resetQuotaDailyDesc')
-  },
-  {
-    key: 'weekly',
-    label: t('admin.subscriptions.resetQuotaWeekly'),
-    description: t('admin.subscriptions.resetQuotaWeeklyDesc')
-  },
-  {
-    key: 'monthly',
-    label: t('admin.subscriptions.resetQuotaMonthly'),
-    description: t('admin.subscriptions.resetQuotaMonthlyDesc')
-  }
-])
-
-const hasResetQuotaSelection = computed(() =>
-  resetQuotaForm.daily || resetQuotaForm.weekly || resetQuotaForm.monthly
-)
-
-const resetResetQuotaForm = () => {
-  resetQuotaForm.daily = true
-  resetQuotaForm.weekly = true
-  resetQuotaForm.monthly = true
-}
 
 const assignForm = reactive({
   user_id: null as number | null,
@@ -1394,33 +1304,18 @@ const confirmRestore = async () => {
 
 const handleResetQuota = (subscription: UserSubscription) => {
   resettingSubscription.value = subscription
-  resetResetQuotaForm()
   showResetQuotaConfirm.value = true
-}
-
-const closeResetQuotaDialog = (force = false) => {
-  if (resettingQuota.value && !force) return
-  showResetQuotaConfirm.value = false
-  resettingSubscription.value = null
-  resetResetQuotaForm()
 }
 
 const confirmResetQuota = async () => {
   if (!resettingSubscription.value) return
   if (resettingQuota.value) return
-  if (!hasResetQuotaSelection.value) {
-    appStore.showError(t('admin.subscriptions.resetQuotaSelectAtLeastOne'))
-    return
-  }
   resettingQuota.value = true
   try {
-    await adminAPI.subscriptions.resetQuota(resettingSubscription.value.id, {
-      daily: resetQuotaForm.daily,
-      weekly: resetQuotaForm.weekly,
-      monthly: resetQuotaForm.monthly
-    })
+    await adminAPI.subscriptions.resetQuota(resettingSubscription.value.id, { daily: true, weekly: true, monthly: true })
     appStore.showSuccess(t('admin.subscriptions.quotaResetSuccess'))
-    closeResetQuotaDialog(true)
+    showResetQuotaConfirm.value = false
+    resettingSubscription.value = null
     await loadSubscriptions()
   } catch (error: any) {
     appStore.showError(error.response?.data?.detail || t('admin.subscriptions.failedToResetQuota'))
@@ -1443,8 +1338,6 @@ const isExpiringSoon = (expiresAt: string): boolean => {
   const days = getDaysRemaining(expiresAt)
   return days !== null && days <= 7
 }
-
-const effectiveSubscriptionLimit = getEffectiveSubscriptionLimit
 
 const getProgressWidth = (used: number | null | undefined, limit: number | null): string => {
   if (!limit || limit === 0) return '0%'

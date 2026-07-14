@@ -7,9 +7,11 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/oauth"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/proxyurl"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/Wei-Shaw/sub2api/internal/util/logredact"
 
@@ -18,22 +20,20 @@ import (
 
 func NewClaudeOAuthClient() service.ClaudeOAuthClient {
 	return &claudeOAuthService{
-		baseURL:              "https://claude.ai",
-		tokenURL:             oauth.TokenURL,
-		browserClientFactory: createClaudeOAuthBrowserClient,
-		tokenClientFactory:   createClaudeOAuthTokenClient,
+		baseURL:       "https://claude.ai",
+		tokenURL:      oauth.TokenURL,
+		clientFactory: createReqClient,
 	}
 }
 
 type claudeOAuthService struct {
-	baseURL              string
-	tokenURL             string
-	browserClientFactory func(proxyURL string) (*req.Client, error)
-	tokenClientFactory   func(proxyURL string) (*req.Client, error)
+	baseURL       string
+	tokenURL      string
+	clientFactory func(proxyURL string) (*req.Client, error)
 }
 
 func (s *claudeOAuthService) GetOrganizationUUID(ctx context.Context, sessionKey, proxyURL string) (string, error) {
-	client, err := s.browserClientFactory(proxyURL)
+	client, err := s.clientFactory(proxyURL)
 	if err != nil {
 		return "", fmt.Errorf("create HTTP client: %w", err)
 	}
@@ -92,7 +92,7 @@ func (s *claudeOAuthService) GetOrganizationUUID(ctx context.Context, sessionKey
 }
 
 func (s *claudeOAuthService) GetAuthorizationCode(ctx context.Context, sessionKey, orgUUID, scope, codeChallenge, state, proxyURL string) (string, error) {
-	client, err := s.browserClientFactory(proxyURL)
+	client, err := s.clientFactory(proxyURL)
 	if err != nil {
 		return "", fmt.Errorf("create HTTP client: %w", err)
 	}
@@ -172,7 +172,7 @@ func (s *claudeOAuthService) GetAuthorizationCode(ctx context.Context, sessionKe
 }
 
 func (s *claudeOAuthService) ExchangeCodeForToken(ctx context.Context, code, codeVerifier, state, proxyURL string, isSetupToken bool) (*oauth.TokenResponse, error) {
-	client, err := s.tokenClientFactory(proxyURL)
+	client, err := s.clientFactory(proxyURL)
 	if err != nil {
 		return nil, fmt.Errorf("create HTTP client: %w", err)
 	}
@@ -228,7 +228,7 @@ func (s *claudeOAuthService) ExchangeCodeForToken(ctx context.Context, code, cod
 }
 
 func (s *claudeOAuthService) RefreshToken(ctx context.Context, refreshToken, proxyURL string) (*oauth.TokenResponse, error) {
-	client, err := s.tokenClientFactory(proxyURL)
+	client, err := s.clientFactory(proxyURL)
 	if err != nil {
 		return nil, fmt.Errorf("create HTTP client: %w", err)
 	}
@@ -259,4 +259,22 @@ func (s *claudeOAuthService) RefreshToken(ctx context.Context, refreshToken, pro
 	}
 
 	return &tokenResp, nil
+}
+
+func createReqClient(proxyURL string) (*req.Client, error) {
+	// 禁用 CookieJar，确保每次授权都是干净的会话
+	client := req.C().
+		SetTimeout(60 * time.Second).
+		ImpersonateChrome().
+		SetCookieJar(nil) // 禁用 CookieJar
+
+	trimmed, _, err := proxyurl.Parse(proxyURL)
+	if err != nil {
+		return nil, err
+	}
+	if trimmed != "" {
+		client.SetProxyURL(trimmed)
+	}
+
+	return instrumentReqClient(client), nil
 }

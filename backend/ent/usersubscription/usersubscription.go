@@ -43,12 +43,6 @@ const (
 	FieldWeeklyUsageUsd = "weekly_usage_usd"
 	// FieldMonthlyUsageUsd holds the string denoting the monthly_usage_usd field in the database.
 	FieldMonthlyUsageUsd = "monthly_usage_usd"
-	// FieldDailyBonusUsd holds the string denoting the daily_bonus_usd field in the database.
-	FieldDailyBonusUsd = "daily_bonus_usd"
-	// FieldWeeklyBonusUsd holds the string denoting the weekly_bonus_usd field in the database.
-	FieldWeeklyBonusUsd = "weekly_bonus_usd"
-	// FieldMonthlyBonusUsd holds the string denoting the monthly_bonus_usd field in the database.
-	FieldMonthlyBonusUsd = "monthly_bonus_usd"
 	// FieldAssignedBy holds the string denoting the assigned_by field in the database.
 	FieldAssignedBy = "assigned_by"
 	// FieldAssignedAt holds the string denoting the assigned_at field in the database.
@@ -112,9 +106,6 @@ var Columns = []string{
 	FieldDailyUsageUsd,
 	FieldWeeklyUsageUsd,
 	FieldMonthlyUsageUsd,
-	FieldDailyBonusUsd,
-	FieldWeeklyBonusUsd,
-	FieldMonthlyBonusUsd,
 	FieldAssignedBy,
 	FieldAssignedAt,
 	FieldNotes,
@@ -154,12 +145,6 @@ var (
 	DefaultWeeklyUsageUsd float64
 	// DefaultMonthlyUsageUsd holds the default value on creation for the "monthly_usage_usd" field.
 	DefaultMonthlyUsageUsd float64
-	// DefaultDailyBonusUsd holds the default value on creation for the "daily_bonus_usd" field.
-	DefaultDailyBonusUsd float64
-	// DefaultWeeklyBonusUsd holds the default value on creation for the "weekly_bonus_usd" field.
-	DefaultWeeklyBonusUsd float64
-	// DefaultMonthlyBonusUsd holds the default value on creation for the "monthly_bonus_usd" field.
-	DefaultMonthlyBonusUsd float64
 	// DefaultAssignedAt holds the default value on creation for the "assigned_at" field.
 	DefaultAssignedAt func() time.Time
 )
@@ -240,21 +225,6 @@ func ByWeeklyUsageUsd(opts ...sql.OrderTermOption) OrderOption {
 // ByMonthlyUsageUsd orders the results by the monthly_usage_usd field.
 func ByMonthlyUsageUsd(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldMonthlyUsageUsd, opts...).ToFunc()
-}
-
-// ByDailyBonusUsd orders the results by the daily_bonus_usd field.
-func ByDailyBonusUsd(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldDailyBonusUsd, opts...).ToFunc()
-}
-
-// ByWeeklyBonusUsd orders the results by the weekly_bonus_usd field.
-func ByWeeklyBonusUsd(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldWeeklyBonusUsd, opts...).ToFunc()
-}
-
-// ByMonthlyBonusUsd orders the results by the monthly_bonus_usd field.
-func ByMonthlyBonusUsd(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldMonthlyBonusUsd, opts...).ToFunc()
 }
 
 // ByAssignedBy orders the results by the assigned_by field.

@@ -457,7 +457,6 @@ type GenerateRedeemCodesInput struct {
 	Value        float64
 	GroupID      *int64 // 订阅类型专用：关联的分组ID
 	ValidityDays int    // 订阅类型专用：有效天数
-	QuotaPeriod  string // 订阅临时额度类型专用：daily/weekly/monthly
 	ExpiresAt    *time.Time
 }
 
@@ -491,8 +490,6 @@ type ProxyQualityCheckResult struct {
 	ExitIP         string                  `json:"exit_ip,omitempty"`
 	Country        string                  `json:"country,omitempty"`
 	CountryCode    string                  `json:"country_code,omitempty"`
-	Region         string                  `json:"region,omitempty"`
-	City           string                  `json:"city,omitempty"`
 	BaseLatencyMs  int64                   `json:"base_latency_ms,omitempty"`
 	PassedCount    int                     `json:"passed_count"`
 	WarnCount      int                     `json:"warn_count"`

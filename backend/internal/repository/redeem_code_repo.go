@@ -30,7 +30,6 @@ func (r *redeemCodeRepository) Create(ctx context.Context, code *service.RedeemC
 		SetStatus(code.Status).
 		SetNotes(code.Notes).
 		SetValidityDays(code.ValidityDays).
-		SetQuotaPeriod(code.QuotaPeriod).
 		SetNillableExpiresAt(code.ExpiresAt).
 		SetNillableUsedBy(code.UsedBy).
 		SetNillableUsedAt(code.UsedAt).
@@ -58,7 +57,6 @@ func (r *redeemCodeRepository) CreateBatch(ctx context.Context, codes []service.
 			SetStatus(c.Status).
 			SetNotes(c.Notes).
 			SetValidityDays(c.ValidityDays).
-			SetQuotaPeriod(c.QuotaPeriod).
 			SetNillableExpiresAt(c.ExpiresAt).
 			SetNillableUsedBy(c.UsedBy).
 			SetNillableUsedAt(c.UsedAt).
@@ -204,8 +202,7 @@ func (r *redeemCodeRepository) Update(ctx context.Context, code *service.RedeemC
 		SetValue(code.Value).
 		SetStatus(code.Status).
 		SetNotes(code.Notes).
-		SetValidityDays(code.ValidityDays).
-		SetQuotaPeriod(code.QuotaPeriod)
+		SetValidityDays(code.ValidityDays)
 
 	if code.UsedBy != nil {
 		up.SetUsedBy(*code.UsedBy)
@@ -428,7 +425,6 @@ func redeemCodeEntityToService(m *dbent.RedeemCode) *service.RedeemCode {
 		ExpiresAt:    m.ExpiresAt,
 		GroupID:      m.GroupID,
 		ValidityDays: m.ValidityDays,
-		QuotaPeriod:  m.QuotaPeriod,
 	}
 	if m.Edges.User != nil {
 		out.User = userEntityToService(m.Edges.User)

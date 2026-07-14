@@ -36,8 +36,6 @@ const (
 	FieldGroupID = "group_id"
 	// FieldValidityDays holds the string denoting the validity_days field in the database.
 	FieldValidityDays = "validity_days"
-	// FieldQuotaPeriod holds the string denoting the quota_period field in the database.
-	FieldQuotaPeriod = "quota_period"
 	// EdgeUser holds the string denoting the user edge name in mutations.
 	EdgeUser = "user"
 	// EdgeGroup holds the string denoting the group edge name in mutations.
@@ -74,7 +72,6 @@ var Columns = []string{
 	FieldExpiresAt,
 	FieldGroupID,
 	FieldValidityDays,
-	FieldQuotaPeriod,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -104,10 +101,6 @@ var (
 	DefaultCreatedAt func() time.Time
 	// DefaultValidityDays holds the default value on creation for the "validity_days" field.
 	DefaultValidityDays int
-	// DefaultQuotaPeriod holds the default value on creation for the "quota_period" field.
-	DefaultQuotaPeriod string
-	// QuotaPeriodValidator is a validator for the "quota_period" field. It is called by the builders before save.
-	QuotaPeriodValidator func(string) error
 )
 
 // OrderOption defines the ordering options for the RedeemCode queries.
@@ -171,11 +164,6 @@ func ByGroupID(opts ...sql.OrderTermOption) OrderOption {
 // ByValidityDays orders the results by the validity_days field.
 func ByValidityDays(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldValidityDays, opts...).ToFunc()
-}
-
-// ByQuotaPeriod orders the results by the quota_period field.
-func ByQuotaPeriod(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldQuotaPeriod, opts...).ToFunc()
 }
 
 // ByUserField orders the results by user field.

@@ -250,69 +250,6 @@ func (_u *UserSubscriptionUpdate) AddMonthlyUsageUsd(v float64) *UserSubscriptio
 	return _u
 }
 
-// SetDailyBonusUsd sets the "daily_bonus_usd" field.
-func (_u *UserSubscriptionUpdate) SetDailyBonusUsd(v float64) *UserSubscriptionUpdate {
-	_u.mutation.ResetDailyBonusUsd()
-	_u.mutation.SetDailyBonusUsd(v)
-	return _u
-}
-
-// SetNillableDailyBonusUsd sets the "daily_bonus_usd" field if the given value is not nil.
-func (_u *UserSubscriptionUpdate) SetNillableDailyBonusUsd(v *float64) *UserSubscriptionUpdate {
-	if v != nil {
-		_u.SetDailyBonusUsd(*v)
-	}
-	return _u
-}
-
-// AddDailyBonusUsd adds value to the "daily_bonus_usd" field.
-func (_u *UserSubscriptionUpdate) AddDailyBonusUsd(v float64) *UserSubscriptionUpdate {
-	_u.mutation.AddDailyBonusUsd(v)
-	return _u
-}
-
-// SetWeeklyBonusUsd sets the "weekly_bonus_usd" field.
-func (_u *UserSubscriptionUpdate) SetWeeklyBonusUsd(v float64) *UserSubscriptionUpdate {
-	_u.mutation.ResetWeeklyBonusUsd()
-	_u.mutation.SetWeeklyBonusUsd(v)
-	return _u
-}
-
-// SetNillableWeeklyBonusUsd sets the "weekly_bonus_usd" field if the given value is not nil.
-func (_u *UserSubscriptionUpdate) SetNillableWeeklyBonusUsd(v *float64) *UserSubscriptionUpdate {
-	if v != nil {
-		_u.SetWeeklyBonusUsd(*v)
-	}
-	return _u
-}
-
-// AddWeeklyBonusUsd adds value to the "weekly_bonus_usd" field.
-func (_u *UserSubscriptionUpdate) AddWeeklyBonusUsd(v float64) *UserSubscriptionUpdate {
-	_u.mutation.AddWeeklyBonusUsd(v)
-	return _u
-}
-
-// SetMonthlyBonusUsd sets the "monthly_bonus_usd" field.
-func (_u *UserSubscriptionUpdate) SetMonthlyBonusUsd(v float64) *UserSubscriptionUpdate {
-	_u.mutation.ResetMonthlyBonusUsd()
-	_u.mutation.SetMonthlyBonusUsd(v)
-	return _u
-}
-
-// SetNillableMonthlyBonusUsd sets the "monthly_bonus_usd" field if the given value is not nil.
-func (_u *UserSubscriptionUpdate) SetNillableMonthlyBonusUsd(v *float64) *UserSubscriptionUpdate {
-	if v != nil {
-		_u.SetMonthlyBonusUsd(*v)
-	}
-	return _u
-}
-
-// AddMonthlyBonusUsd adds value to the "monthly_bonus_usd" field.
-func (_u *UserSubscriptionUpdate) AddMonthlyBonusUsd(v float64) *UserSubscriptionUpdate {
-	_u.mutation.AddMonthlyBonusUsd(v)
-	return _u
-}
-
 // SetAssignedBy sets the "assigned_by" field.
 func (_u *UserSubscriptionUpdate) SetAssignedBy(v int64) *UserSubscriptionUpdate {
 	_u.mutation.SetAssignedBy(v)
@@ -578,24 +515,6 @@ func (_u *UserSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err e
 	}
 	if value, ok := _u.mutation.AddedMonthlyUsageUsd(); ok {
 		_spec.AddField(usersubscription.FieldMonthlyUsageUsd, field.TypeFloat64, value)
-	}
-	if value, ok := _u.mutation.DailyBonusUsd(); ok {
-		_spec.SetField(usersubscription.FieldDailyBonusUsd, field.TypeFloat64, value)
-	}
-	if value, ok := _u.mutation.AddedDailyBonusUsd(); ok {
-		_spec.AddField(usersubscription.FieldDailyBonusUsd, field.TypeFloat64, value)
-	}
-	if value, ok := _u.mutation.WeeklyBonusUsd(); ok {
-		_spec.SetField(usersubscription.FieldWeeklyBonusUsd, field.TypeFloat64, value)
-	}
-	if value, ok := _u.mutation.AddedWeeklyBonusUsd(); ok {
-		_spec.AddField(usersubscription.FieldWeeklyBonusUsd, field.TypeFloat64, value)
-	}
-	if value, ok := _u.mutation.MonthlyBonusUsd(); ok {
-		_spec.SetField(usersubscription.FieldMonthlyBonusUsd, field.TypeFloat64, value)
-	}
-	if value, ok := _u.mutation.AddedMonthlyBonusUsd(); ok {
-		_spec.AddField(usersubscription.FieldMonthlyBonusUsd, field.TypeFloat64, value)
 	}
 	if value, ok := _u.mutation.AssignedAt(); ok {
 		_spec.SetField(usersubscription.FieldAssignedAt, field.TypeTime, value)
@@ -977,69 +896,6 @@ func (_u *UserSubscriptionUpdateOne) AddMonthlyUsageUsd(v float64) *UserSubscrip
 	return _u
 }
 
-// SetDailyBonusUsd sets the "daily_bonus_usd" field.
-func (_u *UserSubscriptionUpdateOne) SetDailyBonusUsd(v float64) *UserSubscriptionUpdateOne {
-	_u.mutation.ResetDailyBonusUsd()
-	_u.mutation.SetDailyBonusUsd(v)
-	return _u
-}
-
-// SetNillableDailyBonusUsd sets the "daily_bonus_usd" field if the given value is not nil.
-func (_u *UserSubscriptionUpdateOne) SetNillableDailyBonusUsd(v *float64) *UserSubscriptionUpdateOne {
-	if v != nil {
-		_u.SetDailyBonusUsd(*v)
-	}
-	return _u
-}
-
-// AddDailyBonusUsd adds value to the "daily_bonus_usd" field.
-func (_u *UserSubscriptionUpdateOne) AddDailyBonusUsd(v float64) *UserSubscriptionUpdateOne {
-	_u.mutation.AddDailyBonusUsd(v)
-	return _u
-}
-
-// SetWeeklyBonusUsd sets the "weekly_bonus_usd" field.
-func (_u *UserSubscriptionUpdateOne) SetWeeklyBonusUsd(v float64) *UserSubscriptionUpdateOne {
-	_u.mutation.ResetWeeklyBonusUsd()
-	_u.mutation.SetWeeklyBonusUsd(v)
-	return _u
-}
-
-// SetNillableWeeklyBonusUsd sets the "weekly_bonus_usd" field if the given value is not nil.
-func (_u *UserSubscriptionUpdateOne) SetNillableWeeklyBonusUsd(v *float64) *UserSubscriptionUpdateOne {
-	if v != nil {
-		_u.SetWeeklyBonusUsd(*v)
-	}
-	return _u
-}
-
-// AddWeeklyBonusUsd adds value to the "weekly_bonus_usd" field.
-func (_u *UserSubscriptionUpdateOne) AddWeeklyBonusUsd(v float64) *UserSubscriptionUpdateOne {
-	_u.mutation.AddWeeklyBonusUsd(v)
-	return _u
-}
-
-// SetMonthlyBonusUsd sets the "monthly_bonus_usd" field.
-func (_u *UserSubscriptionUpdateOne) SetMonthlyBonusUsd(v float64) *UserSubscriptionUpdateOne {
-	_u.mutation.ResetMonthlyBonusUsd()
-	_u.mutation.SetMonthlyBonusUsd(v)
-	return _u
-}
-
-// SetNillableMonthlyBonusUsd sets the "monthly_bonus_usd" field if the given value is not nil.
-func (_u *UserSubscriptionUpdateOne) SetNillableMonthlyBonusUsd(v *float64) *UserSubscriptionUpdateOne {
-	if v != nil {
-		_u.SetMonthlyBonusUsd(*v)
-	}
-	return _u
-}
-
-// AddMonthlyBonusUsd adds value to the "monthly_bonus_usd" field.
-func (_u *UserSubscriptionUpdateOne) AddMonthlyBonusUsd(v float64) *UserSubscriptionUpdateOne {
-	_u.mutation.AddMonthlyBonusUsd(v)
-	return _u
-}
-
 // SetAssignedBy sets the "assigned_by" field.
 func (_u *UserSubscriptionUpdateOne) SetAssignedBy(v int64) *UserSubscriptionUpdateOne {
 	_u.mutation.SetAssignedBy(v)
@@ -1335,24 +1191,6 @@ func (_u *UserSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *UserSu
 	}
 	if value, ok := _u.mutation.AddedMonthlyUsageUsd(); ok {
 		_spec.AddField(usersubscription.FieldMonthlyUsageUsd, field.TypeFloat64, value)
-	}
-	if value, ok := _u.mutation.DailyBonusUsd(); ok {
-		_spec.SetField(usersubscription.FieldDailyBonusUsd, field.TypeFloat64, value)
-	}
-	if value, ok := _u.mutation.AddedDailyBonusUsd(); ok {
-		_spec.AddField(usersubscription.FieldDailyBonusUsd, field.TypeFloat64, value)
-	}
-	if value, ok := _u.mutation.WeeklyBonusUsd(); ok {
-		_spec.SetField(usersubscription.FieldWeeklyBonusUsd, field.TypeFloat64, value)
-	}
-	if value, ok := _u.mutation.AddedWeeklyBonusUsd(); ok {
-		_spec.AddField(usersubscription.FieldWeeklyBonusUsd, field.TypeFloat64, value)
-	}
-	if value, ok := _u.mutation.MonthlyBonusUsd(); ok {
-		_spec.SetField(usersubscription.FieldMonthlyBonusUsd, field.TypeFloat64, value)
-	}
-	if value, ok := _u.mutation.AddedMonthlyBonusUsd(); ok {
-		_spec.AddField(usersubscription.FieldMonthlyBonusUsd, field.TypeFloat64, value)
 	}
 	if value, ok := _u.mutation.AssignedAt(); ok {
 		_spec.SetField(usersubscription.FieldAssignedAt, field.TypeTime, value)

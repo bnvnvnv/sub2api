@@ -9,7 +9,6 @@ import type {
   GenerateRedeemCodesRequest,
   BatchUpdateRedeemCodeFields,
   RedeemCodeType,
-  SubscriptionQuotaPeriod,
   PaginatedResponse
 } from '@/types'
 
@@ -71,7 +70,6 @@ export async function generate(
   value: number,
   groupId?: number | null,
   validityDays?: number,
-  quotaPeriod?: SubscriptionQuotaPeriod,
   expiresInDays?: number | null
 ): Promise<RedeemCode[]> {
   const payload: GenerateRedeemCodesRequest = {
@@ -81,16 +79,11 @@ export async function generate(
   }
 
   // 订阅类型专用字段
-  if (type === 'subscription' || type === 'subscription_quota') {
-    payload.group_id = groupId
-  }
   if (type === 'subscription') {
+    payload.group_id = groupId
     if (validityDays && validityDays > 0) {
       payload.validity_days = validityDays
     }
-  }
-  if (type === 'subscription_quota' && quotaPeriod) {
-    payload.quota_period = quotaPeriod
   }
   if (expiresInDays && expiresInDays > 0) {
     payload.expires_in_days = expiresInDays

@@ -2,8 +2,6 @@
  * Core Type Definitions for Sub2API Frontend
  */
 
-import type { ProxyProtocol } from '@/extensions/proxyProtocols'
-
 // ==================== Common Types ====================
 
 export interface SelectOption {
@@ -743,7 +741,7 @@ export interface UpdateGroupRequest {
 export type AccountPlatform = 'anthropic' | 'openai' | 'gemini' | 'antigravity' | 'grok'
 export type AccountType = 'oauth' | 'setup-token' | 'apikey' | 'upstream' | 'bedrock' | 'service_account'
 export type OAuthAddMethod = 'oauth' | 'setup-token'
-export type { ProxyProtocol } from '@/extensions/proxyProtocols'
+export type ProxyProtocol = 'http' | 'https' | 'socks5' | 'socks5h'
 
 // Claude Model type (returned by /v1/models and account models API)
 export interface ClaudeModel {
@@ -809,8 +807,6 @@ export interface ProxyQualityCheckResult {
   exit_ip?: string
   country?: string
   country_code?: string
-  region?: string
-  city?: string
   base_latency_ms?: number
   passed_count: number
   warn_count: number
@@ -1024,10 +1020,38 @@ export interface AntigravityModelQuota {
 }
 
 export interface GrokQuotaWindow {
-  limit?: number
-  remaining?: number
-  reset_unix?: number
-  reset_at?: string
+  limit?: number | null
+  remaining?: number | null
+  reset_unix?: number | null
+  reset_at?: string | null
+}
+
+export interface GrokBillingProductUsage {
+  product: string
+  usage_percent?: number | null
+}
+
+export interface GrokBillingSummary {
+  period_type?: string
+  usage_percent?: number | null
+  period_start?: string
+  period_end?: string
+  product_usage?: GrokBillingProductUsage[]
+  monthly_limit_cents?: number | null
+  used_cents?: number | null
+  included_used_cents?: number | null
+  billing_period_start?: string
+  billing_period_end?: string
+  used_percent?: number | null
+  plan?: string
+  status_code?: number
+  source?: string
+  fetched_at?: string
+  updated_at?: string
+  weekly_updated_at?: string
+  monthly_updated_at?: string
+  partial?: boolean
+  failed_windows?: string[]
 }
 
 export interface AccountUsageInfo {
@@ -1053,6 +1077,12 @@ export interface AccountUsageInfo {
   grok_last_headers_seen_at?: string
   grok_last_status_code?: number
   grok_local_usage?: WindowStats | null
+  grok_local_usage_24h?: WindowStats | null
+  grok_local_usage_7d?: WindowStats | null
+  grok_local_usage_monthly?: WindowStats | null
+  grok_billing?: GrokBillingSummary | null
+  subscription_tier?: string
+  subscription_tier_raw?: string
   ai_credits?: Array<{
     credit_type?: string
     amount?: number
@@ -1318,8 +1348,7 @@ export interface CodexSessionImportResult {
 
 // ==================== Usage & Redeem Types ====================
 
-export type RedeemCodeType = 'balance' | 'concurrency' | 'subscription' | 'subscription_quota' | 'invitation'
-export type SubscriptionQuotaPeriod = 'daily' | 'weekly' | 'monthly'
+export type RedeemCodeType = 'balance' | 'concurrency' | 'subscription' | 'invitation'
 export type UsageRequestType = 'unknown' | 'sync' | 'stream' | 'ws_v2' | 'cyber'
 export type ImageSizeSource = 'output' | 'input' | 'default' | 'legacy'
 export type ImageSizeBreakdown = Record<string, number>
@@ -1331,7 +1360,6 @@ export interface UsageLog {
   account_id: number | null
   request_id: string
   model: string
-  upstream_model?: string | null
   service_tier?: string | null
   reasoning_effort?: string | null
   inbound_endpoint?: string | null
@@ -1354,6 +1382,7 @@ export interface UsageLog {
   total_cost: number
   actual_cost: number
   rate_multiplier: number
+  long_context_billing_applied: boolean
   billing_type: number
 
   request_type?: UsageRequestType
@@ -1454,7 +1483,6 @@ export interface RedeemCode {
   notes?: string
   group_id?: number | null // 订阅类型专用
   validity_days?: number // 订阅类型专用
-  quota_period?: SubscriptionQuotaPeriod | '' // 订阅临时额度类型专用
   user?: User
   group?: Group // 关联的分组
 }
@@ -1465,7 +1493,6 @@ export interface GenerateRedeemCodesRequest {
   value: number
   group_id?: number | null // 订阅类型专用
   validity_days?: number // 订阅类型专用
-  quota_period?: SubscriptionQuotaPeriod // 订阅临时额度类型专用
   expires_at?: string | null
   expires_in_days?: number
 }
@@ -1684,9 +1711,6 @@ export interface UserSubscription {
   daily_usage_usd: number
   weekly_usage_usd: number
   monthly_usage_usd: number
-  daily_bonus_usd: number
-  weekly_bonus_usd: number
-  monthly_bonus_usd: number
   daily_window_start: string | null
   weekly_window_start: string | null
   monthly_window_start: string | null

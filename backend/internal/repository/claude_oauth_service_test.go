@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -92,10 +91,7 @@ func (s *ClaudeOAuthServiceSuite) TestGetOrganizationUUID() {
 			require.True(s.T(), ok, "type assertion failed")
 			s.client = client
 			s.client.baseURL = "http://in-process"
-			s.client.browserClientFactory = func(string) (*req.Client, error) { return newTestReqClient(rt), nil }
-			s.client.tokenClientFactory = func(string) (*req.Client, error) {
-				return nil, errors.New("unexpected token client use")
-			}
+			s.client.clientFactory = func(string) (*req.Client, error) { return newTestReqClient(rt), nil }
 
 			got, err := s.client.GetOrganizationUUID(context.Background(), "sess", "")
 
@@ -173,10 +169,7 @@ func (s *ClaudeOAuthServiceSuite) TestGetAuthorizationCode() {
 			require.True(s.T(), ok, "type assertion failed")
 			s.client = client
 			s.client.baseURL = "http://in-process"
-			s.client.browserClientFactory = func(string) (*req.Client, error) { return newTestReqClient(rt), nil }
-			s.client.tokenClientFactory = func(string) (*req.Client, error) {
-				return nil, errors.New("unexpected token client use")
-			}
+			s.client.clientFactory = func(string) (*req.Client, error) { return newTestReqClient(rt), nil }
 
 			code, err := s.client.GetAuthorizationCode(context.Background(), "sess", "org-1", oauth.ScopeInference, "cc", "st", "")
 
@@ -281,10 +274,7 @@ func (s *ClaudeOAuthServiceSuite) TestExchangeCodeForToken() {
 			require.True(s.T(), ok, "type assertion failed")
 			s.client = client
 			s.client.tokenURL = "http://in-process/token"
-			s.client.browserClientFactory = func(string) (*req.Client, error) {
-				return nil, errors.New("unexpected browser client use")
-			}
-			s.client.tokenClientFactory = func(string) (*req.Client, error) { return newTestReqClient(rt), nil }
+			s.client.clientFactory = func(string) (*req.Client, error) { return newTestReqClient(rt), nil }
 
 			resp, err := s.client.ExchangeCodeForToken(context.Background(), tt.code, "ver", "", "", tt.isSetupToken)
 
@@ -380,10 +370,7 @@ func (s *ClaudeOAuthServiceSuite) TestRefreshToken() {
 			require.True(s.T(), ok, "type assertion failed")
 			s.client = client
 			s.client.tokenURL = "http://in-process/token"
-			s.client.browserClientFactory = func(string) (*req.Client, error) {
-				return nil, errors.New("unexpected browser client use")
-			}
-			s.client.tokenClientFactory = func(string) (*req.Client, error) { return newTestReqClient(rt), nil }
+			s.client.clientFactory = func(string) (*req.Client, error) { return newTestReqClient(rt), nil }
 
 			resp, err := s.client.RefreshToken(context.Background(), "rt", "")
 
@@ -404,22 +391,4 @@ func (s *ClaudeOAuthServiceSuite) TestRefreshToken() {
 
 func TestClaudeOAuthServiceSuite(t *testing.T) {
 	suite.Run(t, new(ClaudeOAuthServiceSuite))
-}
-
-func TestCreateClaudeOAuthTokenClient_DoesNotInjectBrowserDefaults(t *testing.T) {
-	client, err := createClaudeOAuthTokenClient("")
-	require.NoError(t, err)
-
-	require.Nil(t, client.Transport.Headers["sec-ch-ua"])
-	require.Nil(t, client.Transport.Headers["upgrade-insecure-requests"])
-	require.Nil(t, client.Transport.Headers["accept-language"])
-}
-
-func TestCreateClaudeOAuthBrowserClient_InjectsChromeDefaults(t *testing.T) {
-	client, err := createClaudeOAuthBrowserClient("")
-	require.NoError(t, err)
-
-	require.Contains(t, client.Transport.Headers.Get("user-agent"), "Mozilla/5.0")
-	require.NotEmpty(t, client.Transport.Headers.Get("sec-ch-ua"))
-	require.Equal(t, "1", client.Transport.Headers.Get("upgrade-insecure-requests"))
 }

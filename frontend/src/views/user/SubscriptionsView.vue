@@ -108,11 +108,8 @@
                 </span>
                 <span class="text-sm text-gray-500 dark:text-dark-400">
                   ${{ (subscription.daily_usage_usd || 0).toFixed(2) }} / ${{
-                    effectiveSubscriptionLimit(subscription, 'daily')?.toFixed(2)
+                    subscription.group.daily_limit_usd.toFixed(2)
                   }}
-                  <span v-if="subscription.daily_bonus_usd > 0" class="text-emerald-600 dark:text-emerald-400">
-                    (+${{ subscription.daily_bonus_usd.toFixed(2) }})
-                  </span>
                 </span>
               </div>
               <div class="relative h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-dark-600">
@@ -121,13 +118,13 @@
                   :class="
                     getProgressBarClass(
                       subscription.daily_usage_usd,
-                      effectiveSubscriptionLimit(subscription, 'daily')
+                      subscription.group.daily_limit_usd
                     )
                   "
                   :style="{
                     width: getProgressWidth(
                       subscription.daily_usage_usd,
-                      effectiveSubscriptionLimit(subscription, 'daily')
+                      subscription.group.daily_limit_usd
                     )
                   }"
                 ></div>
@@ -148,11 +145,8 @@
                 </span>
                 <span class="text-sm text-gray-500 dark:text-dark-400">
                   ${{ (subscription.weekly_usage_usd || 0).toFixed(2) }} / ${{
-                    effectiveSubscriptionLimit(subscription, 'weekly')?.toFixed(2)
+                    subscription.group.weekly_limit_usd.toFixed(2)
                   }}
-                  <span v-if="subscription.weekly_bonus_usd > 0" class="text-emerald-600 dark:text-emerald-400">
-                    (+${{ subscription.weekly_bonus_usd.toFixed(2) }})
-                  </span>
                 </span>
               </div>
               <div class="relative h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-dark-600">
@@ -161,13 +155,13 @@
                   :class="
                     getProgressBarClass(
                       subscription.weekly_usage_usd,
-                      effectiveSubscriptionLimit(subscription, 'weekly')
+                      subscription.group.weekly_limit_usd
                     )
                   "
                   :style="{
                     width: getProgressWidth(
                       subscription.weekly_usage_usd,
-                      effectiveSubscriptionLimit(subscription, 'weekly')
+                      subscription.group.weekly_limit_usd
                     )
                   }"
                 ></div>
@@ -192,11 +186,8 @@
                 </span>
                 <span class="text-sm text-gray-500 dark:text-dark-400">
                   ${{ (subscription.monthly_usage_usd || 0).toFixed(2) }} / ${{
-                    effectiveSubscriptionLimit(subscription, 'monthly')?.toFixed(2)
+                    subscription.group.monthly_limit_usd.toFixed(2)
                   }}
-                  <span v-if="subscription.monthly_bonus_usd > 0" class="text-emerald-600 dark:text-emerald-400">
-                    (+${{ subscription.monthly_bonus_usd.toFixed(2) }})
-                  </span>
                 </span>
               </div>
               <div class="relative h-2 overflow-hidden rounded-full bg-gray-200 dark:bg-dark-600">
@@ -205,13 +196,13 @@
                   :class="
                     getProgressBarClass(
                       subscription.monthly_usage_usd,
-                      effectiveSubscriptionLimit(subscription, 'monthly')
+                      subscription.group.monthly_limit_usd
                     )
                   "
                   :style="{
                     width: getProgressWidth(
                       subscription.monthly_usage_usd,
-                      effectiveSubscriptionLimit(subscription, 'monthly')
+                      subscription.group.monthly_limit_usd
                     )
                   }"
                 ></div>
@@ -268,12 +259,7 @@ import Icon from '@/components/icons/Icon.vue'
 import { formatDateOnly } from '@/utils/format'
 import { hasPeakRate, formatPeakRateWindow, serverTimezoneLabel } from '@/utils/peak-rate'
 import { platformBorderClass, platformBadgeClass, platformButtonClass, platformLabel } from '@/utils/platformColors'
-import {
-  getEffectiveSubscriptionLimit,
-  getRemainingDurationParts,
-  isOneTimeDailyQuota,
-  type RemainingDurationParts
-} from '@/utils/subscriptionQuota'
+import { getRemainingDurationParts, isOneTimeDailyQuota, type RemainingDurationParts } from '@/utils/subscriptionQuota'
 
 function platformAccentDotClass(p: string): string {
   switch (p) {
@@ -291,8 +277,6 @@ const appStore = useAppStore()
 
 const subscriptions = ref<UserSubscription[]>([])
 const loading = ref(true)
-
-const effectiveSubscriptionLimit = getEffectiveSubscriptionLimit
 
 function subscriptionHasPeakRate(subscription: UserSubscription): boolean {
   return hasPeakRate(subscription.group)

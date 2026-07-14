@@ -36087,7 +36087,6 @@ type RedeemCodeMutation struct {
 	expires_at       *time.Time
 	validity_days    *int
 	addvalidity_days *int
-	quota_period     *string
 	clearedFields    map[string]struct{}
 	user             *int64
 	cleareduser      bool
@@ -36697,42 +36696,6 @@ func (m *RedeemCodeMutation) ResetValidityDays() {
 	m.addvalidity_days = nil
 }
 
-// SetQuotaPeriod sets the "quota_period" field.
-func (m *RedeemCodeMutation) SetQuotaPeriod(s string) {
-	m.quota_period = &s
-}
-
-// QuotaPeriod returns the value of the "quota_period" field in the mutation.
-func (m *RedeemCodeMutation) QuotaPeriod() (r string, exists bool) {
-	v := m.quota_period
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldQuotaPeriod returns the old "quota_period" field's value of the RedeemCode entity.
-// If the RedeemCode object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RedeemCodeMutation) OldQuotaPeriod(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldQuotaPeriod is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldQuotaPeriod requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldQuotaPeriod: %w", err)
-	}
-	return oldValue.QuotaPeriod, nil
-}
-
-// ResetQuotaPeriod resets all changes to the "quota_period" field.
-func (m *RedeemCodeMutation) ResetQuotaPeriod() {
-	m.quota_period = nil
-}
-
 // SetUserID sets the "user" edge to the User entity by id.
 func (m *RedeemCodeMutation) SetUserID(id int64) {
 	m.user = &id
@@ -36868,9 +36831,6 @@ func (m *RedeemCodeMutation) Fields() []string {
 	if m.validity_days != nil {
 		fields = append(fields, redeemcode.FieldValidityDays)
 	}
-	if m.quota_period != nil {
-		fields = append(fields, redeemcode.FieldQuotaPeriod)
-	}
 	return fields
 }
 
@@ -36901,8 +36861,6 @@ func (m *RedeemCodeMutation) Field(name string) (ent.Value, bool) {
 		return m.GroupID()
 	case redeemcode.FieldValidityDays:
 		return m.ValidityDays()
-	case redeemcode.FieldQuotaPeriod:
-		return m.QuotaPeriod()
 	}
 	return nil, false
 }
@@ -36934,8 +36892,6 @@ func (m *RedeemCodeMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldGroupID(ctx)
 	case redeemcode.FieldValidityDays:
 		return m.OldValidityDays(ctx)
-	case redeemcode.FieldQuotaPeriod:
-		return m.OldQuotaPeriod(ctx)
 	}
 	return nil, fmt.Errorf("unknown RedeemCode field %s", name)
 }
@@ -37021,13 +36977,6 @@ func (m *RedeemCodeMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetValidityDays(v)
-		return nil
-	case redeemcode.FieldQuotaPeriod:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetQuotaPeriod(v)
 		return nil
 	}
 	return fmt.Errorf("unknown RedeemCode field %s", name)
@@ -37170,9 +37119,6 @@ func (m *RedeemCodeMutation) ResetField(name string) error {
 		return nil
 	case redeemcode.FieldValidityDays:
 		m.ResetValidityDays()
-		return nil
-	case redeemcode.FieldQuotaPeriod:
-		m.ResetQuotaPeriod()
 		return nil
 	}
 	return fmt.Errorf("unknown RedeemCode field %s", name)
@@ -41817,83 +41763,84 @@ func (m *UsageCleanupTaskMutation) ResetEdge(name string) error {
 // UsageLogMutation represents an operation that mutates the UsageLog nodes in the graph.
 type UsageLogMutation struct {
 	config
-	op                          Op
-	typ                         string
-	id                          *int64
-	request_id                  *string
-	model                       *string
-	requested_model             *string
-	upstream_model              *string
-	channel_id                  *int64
-	addchannel_id               *int64
-	model_mapping_chain         *string
-	billing_tier                *string
-	billing_mode                *string
-	input_tokens                *int
-	addinput_tokens             *int
-	output_tokens               *int
-	addoutput_tokens            *int
-	cache_creation_tokens       *int
-	addcache_creation_tokens    *int
-	cache_read_tokens           *int
-	addcache_read_tokens        *int
-	cache_creation_5m_tokens    *int
-	addcache_creation_5m_tokens *int
-	cache_creation_1h_tokens    *int
-	addcache_creation_1h_tokens *int
-	input_cost                  *float64
-	addinput_cost               *float64
-	output_cost                 *float64
-	addoutput_cost              *float64
-	cache_creation_cost         *float64
-	addcache_creation_cost      *float64
-	cache_read_cost             *float64
-	addcache_read_cost          *float64
-	total_cost                  *float64
-	addtotal_cost               *float64
-	actual_cost                 *float64
-	addactual_cost              *float64
-	rate_multiplier             *float64
-	addrate_multiplier          *float64
-	account_rate_multiplier     *float64
-	addaccount_rate_multiplier  *float64
-	billing_type                *int8
-	addbilling_type             *int8
-	stream                      *bool
-	duration_ms                 *int
-	addduration_ms              *int
-	first_token_ms              *int
-	addfirst_token_ms           *int
-	user_agent                  *string
-	ip_address                  *string
-	image_count                 *int
-	addimage_count              *int
-	image_size                  *string
-	image_input_size            *string
-	image_output_size           *string
-	image_size_source           *string
-	image_size_breakdown        *map[string]int
-	video_count                 *int
-	addvideo_count              *int
-	video_resolution            *string
-	video_duration_seconds      *int
-	addvideo_duration_seconds   *int
-	cache_ttl_overridden        *bool
-	created_at                  *time.Time
-	clearedFields               map[string]struct{}
-	user                        *int64
-	cleareduser                 bool
-	api_key                     *int64
-	clearedapi_key              bool
-	account                     *int64
-	clearedaccount              bool
-	group                       *int64
-	clearedgroup                bool
-	subscription                *int64
-	clearedsubscription         bool
-	done                        bool
-	oldValue                    func(context.Context) (*UsageLog, error)
-	predicates                  []predicate.UsageLog
+	op                           Op
+	typ                          string
+	id                           *int64
+	request_id                   *string
+	model                        *string
+	requested_model              *string
+	upstream_model               *string
+	channel_id                   *int64
+	addchannel_id                *int64
+	model_mapping_chain          *string
+	billing_tier                 *string
+	billing_mode                 *string
+	input_tokens                 *int
+	addinput_tokens              *int
+	output_tokens                *int
+	addoutput_tokens             *int
+	cache_creation_tokens        *int
+	addcache_creation_tokens     *int
+	cache_read_tokens            *int
+	addcache_read_tokens         *int
+	cache_creation_5m_tokens     *int
+	addcache_creation_5m_tokens  *int
+	cache_creation_1h_tokens     *int
+	addcache_creation_1h_tokens  *int
+	input_cost                   *float64
+	addinput_cost                *float64
+	output_cost                  *float64
+	addoutput_cost               *float64
+	cache_creation_cost          *float64
+	addcache_creation_cost       *float64
+	cache_read_cost              *float64
+	addcache_read_cost           *float64
+	total_cost                   *float64
+	addtotal_cost                *float64
+	actual_cost                  *float64
+	addactual_cost               *float64
+	rate_multiplier              *float64
+	addrate_multiplier           *float64
+	long_context_billing_applied *bool
+	account_rate_multiplier      *float64
+	addaccount_rate_multiplier   *float64
+	billing_type                 *int8
+	addbilling_type              *int8
+	stream                       *bool
+	duration_ms                  *int
+	addduration_ms               *int
+	first_token_ms               *int
+	addfirst_token_ms            *int
+	user_agent                   *string
+	ip_address                   *string
+	image_count                  *int
+	addimage_count               *int
+	image_size                   *string
+	image_input_size             *string
+	image_output_size            *string
+	image_size_source            *string
+	image_size_breakdown         *map[string]int
+	video_count                  *int
+	addvideo_count               *int
+	video_resolution             *string
+	video_duration_seconds       *int
+	addvideo_duration_seconds    *int
+	cache_ttl_overridden         *bool
+	created_at                   *time.Time
+	clearedFields                map[string]struct{}
+	user                         *int64
+	cleareduser                  bool
+	api_key                      *int64
+	clearedapi_key               bool
+	account                      *int64
+	clearedaccount               bool
+	group                        *int64
+	clearedgroup                 bool
+	subscription                 *int64
+	clearedsubscription          bool
+	done                         bool
+	oldValue                     func(context.Context) (*UsageLog, error)
+	predicates                   []predicate.UsageLog
 }
 
 var _ ent.Mutation = (*UsageLogMutation)(nil)
@@ -43315,6 +43262,42 @@ func (m *UsageLogMutation) ResetRateMultiplier() {
 	m.addrate_multiplier = nil
 }
 
+// SetLongContextBillingApplied sets the "long_context_billing_applied" field.
+func (m *UsageLogMutation) SetLongContextBillingApplied(b bool) {
+	m.long_context_billing_applied = &b
+}
+
+// LongContextBillingApplied returns the value of the "long_context_billing_applied" field in the mutation.
+func (m *UsageLogMutation) LongContextBillingApplied() (r bool, exists bool) {
+	v := m.long_context_billing_applied
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLongContextBillingApplied returns the old "long_context_billing_applied" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldLongContextBillingApplied(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLongContextBillingApplied is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLongContextBillingApplied requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLongContextBillingApplied: %w", err)
+	}
+	return oldValue.LongContextBillingApplied, nil
+}
+
+// ResetLongContextBillingApplied resets all changes to the "long_context_billing_applied" field.
+func (m *UsageLogMutation) ResetLongContextBillingApplied() {
+	m.long_context_billing_applied = nil
+}
+
 // SetAccountRateMultiplier sets the "account_rate_multiplier" field.
 func (m *UsageLogMutation) SetAccountRateMultiplier(f float64) {
 	m.account_rate_multiplier = &f
@@ -44432,7 +44415,7 @@ func (m *UsageLogMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UsageLogMutation) Fields() []string {
-	fields := make([]string, 0, 44)
+	fields := make([]string, 0, 45)
 	if m.user != nil {
 		fields = append(fields, usagelog.FieldUserID)
 	}
@@ -44510,6 +44493,9 @@ func (m *UsageLogMutation) Fields() []string {
 	}
 	if m.rate_multiplier != nil {
 		fields = append(fields, usagelog.FieldRateMultiplier)
+	}
+	if m.long_context_billing_applied != nil {
+		fields = append(fields, usagelog.FieldLongContextBillingApplied)
 	}
 	if m.account_rate_multiplier != nil {
 		fields = append(fields, usagelog.FieldAccountRateMultiplier)
@@ -44625,6 +44611,8 @@ func (m *UsageLogMutation) Field(name string) (ent.Value, bool) {
 		return m.ActualCost()
 	case usagelog.FieldRateMultiplier:
 		return m.RateMultiplier()
+	case usagelog.FieldLongContextBillingApplied:
+		return m.LongContextBillingApplied()
 	case usagelog.FieldAccountRateMultiplier:
 		return m.AccountRateMultiplier()
 	case usagelog.FieldBillingType:
@@ -44722,6 +44710,8 @@ func (m *UsageLogMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldActualCost(ctx)
 	case usagelog.FieldRateMultiplier:
 		return m.OldRateMultiplier(ctx)
+	case usagelog.FieldLongContextBillingApplied:
+		return m.OldLongContextBillingApplied(ctx)
 	case usagelog.FieldAccountRateMultiplier:
 		return m.OldAccountRateMultiplier(ctx)
 	case usagelog.FieldBillingType:
@@ -44948,6 +44938,13 @@ func (m *UsageLogMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetRateMultiplier(v)
+		return nil
+	case usagelog.FieldLongContextBillingApplied:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLongContextBillingApplied(v)
 		return nil
 	case usagelog.FieldAccountRateMultiplier:
 		v, ok := value.(float64)
@@ -45579,6 +45576,9 @@ func (m *UsageLogMutation) ResetField(name string) error {
 		return nil
 	case usagelog.FieldRateMultiplier:
 		m.ResetRateMultiplier()
+		return nil
+	case usagelog.FieldLongContextBillingApplied:
+		m.ResetLongContextBillingApplied()
 		return nil
 	case usagelog.FieldAccountRateMultiplier:
 		m.ResetAccountRateMultiplier()
@@ -52419,12 +52419,6 @@ type UserSubscriptionMutation struct {
 	addweekly_usage_usd     *float64
 	monthly_usage_usd       *float64
 	addmonthly_usage_usd    *float64
-	daily_bonus_usd         *float64
-	adddaily_bonus_usd      *float64
-	weekly_bonus_usd        *float64
-	addweekly_bonus_usd     *float64
-	monthly_bonus_usd       *float64
-	addmonthly_bonus_usd    *float64
 	assigned_at             *time.Time
 	notes                   *string
 	clearedFields           map[string]struct{}
@@ -53156,174 +53150,6 @@ func (m *UserSubscriptionMutation) ResetMonthlyUsageUsd() {
 	m.addmonthly_usage_usd = nil
 }
 
-// SetDailyBonusUsd sets the "daily_bonus_usd" field.
-func (m *UserSubscriptionMutation) SetDailyBonusUsd(f float64) {
-	m.daily_bonus_usd = &f
-	m.adddaily_bonus_usd = nil
-}
-
-// DailyBonusUsd returns the value of the "daily_bonus_usd" field in the mutation.
-func (m *UserSubscriptionMutation) DailyBonusUsd() (r float64, exists bool) {
-	v := m.daily_bonus_usd
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldDailyBonusUsd returns the old "daily_bonus_usd" field's value of the UserSubscription entity.
-// If the UserSubscription object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserSubscriptionMutation) OldDailyBonusUsd(ctx context.Context) (v float64, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldDailyBonusUsd is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldDailyBonusUsd requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDailyBonusUsd: %w", err)
-	}
-	return oldValue.DailyBonusUsd, nil
-}
-
-// AddDailyBonusUsd adds f to the "daily_bonus_usd" field.
-func (m *UserSubscriptionMutation) AddDailyBonusUsd(f float64) {
-	if m.adddaily_bonus_usd != nil {
-		*m.adddaily_bonus_usd += f
-	} else {
-		m.adddaily_bonus_usd = &f
-	}
-}
-
-// AddedDailyBonusUsd returns the value that was added to the "daily_bonus_usd" field in this mutation.
-func (m *UserSubscriptionMutation) AddedDailyBonusUsd() (r float64, exists bool) {
-	v := m.adddaily_bonus_usd
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ResetDailyBonusUsd resets all changes to the "daily_bonus_usd" field.
-func (m *UserSubscriptionMutation) ResetDailyBonusUsd() {
-	m.daily_bonus_usd = nil
-	m.adddaily_bonus_usd = nil
-}
-
-// SetWeeklyBonusUsd sets the "weekly_bonus_usd" field.
-func (m *UserSubscriptionMutation) SetWeeklyBonusUsd(f float64) {
-	m.weekly_bonus_usd = &f
-	m.addweekly_bonus_usd = nil
-}
-
-// WeeklyBonusUsd returns the value of the "weekly_bonus_usd" field in the mutation.
-func (m *UserSubscriptionMutation) WeeklyBonusUsd() (r float64, exists bool) {
-	v := m.weekly_bonus_usd
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldWeeklyBonusUsd returns the old "weekly_bonus_usd" field's value of the UserSubscription entity.
-// If the UserSubscription object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserSubscriptionMutation) OldWeeklyBonusUsd(ctx context.Context) (v float64, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldWeeklyBonusUsd is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldWeeklyBonusUsd requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldWeeklyBonusUsd: %w", err)
-	}
-	return oldValue.WeeklyBonusUsd, nil
-}
-
-// AddWeeklyBonusUsd adds f to the "weekly_bonus_usd" field.
-func (m *UserSubscriptionMutation) AddWeeklyBonusUsd(f float64) {
-	if m.addweekly_bonus_usd != nil {
-		*m.addweekly_bonus_usd += f
-	} else {
-		m.addweekly_bonus_usd = &f
-	}
-}
-
-// AddedWeeklyBonusUsd returns the value that was added to the "weekly_bonus_usd" field in this mutation.
-func (m *UserSubscriptionMutation) AddedWeeklyBonusUsd() (r float64, exists bool) {
-	v := m.addweekly_bonus_usd
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ResetWeeklyBonusUsd resets all changes to the "weekly_bonus_usd" field.
-func (m *UserSubscriptionMutation) ResetWeeklyBonusUsd() {
-	m.weekly_bonus_usd = nil
-	m.addweekly_bonus_usd = nil
-}
-
-// SetMonthlyBonusUsd sets the "monthly_bonus_usd" field.
-func (m *UserSubscriptionMutation) SetMonthlyBonusUsd(f float64) {
-	m.monthly_bonus_usd = &f
-	m.addmonthly_bonus_usd = nil
-}
-
-// MonthlyBonusUsd returns the value of the "monthly_bonus_usd" field in the mutation.
-func (m *UserSubscriptionMutation) MonthlyBonusUsd() (r float64, exists bool) {
-	v := m.monthly_bonus_usd
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldMonthlyBonusUsd returns the old "monthly_bonus_usd" field's value of the UserSubscription entity.
-// If the UserSubscription object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *UserSubscriptionMutation) OldMonthlyBonusUsd(ctx context.Context) (v float64, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldMonthlyBonusUsd is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldMonthlyBonusUsd requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldMonthlyBonusUsd: %w", err)
-	}
-	return oldValue.MonthlyBonusUsd, nil
-}
-
-// AddMonthlyBonusUsd adds f to the "monthly_bonus_usd" field.
-func (m *UserSubscriptionMutation) AddMonthlyBonusUsd(f float64) {
-	if m.addmonthly_bonus_usd != nil {
-		*m.addmonthly_bonus_usd += f
-	} else {
-		m.addmonthly_bonus_usd = &f
-	}
-}
-
-// AddedMonthlyBonusUsd returns the value that was added to the "monthly_bonus_usd" field in this mutation.
-func (m *UserSubscriptionMutation) AddedMonthlyBonusUsd() (r float64, exists bool) {
-	v := m.addmonthly_bonus_usd
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ResetMonthlyBonusUsd resets all changes to the "monthly_bonus_usd" field.
-func (m *UserSubscriptionMutation) ResetMonthlyBonusUsd() {
-	m.monthly_bonus_usd = nil
-	m.addmonthly_bonus_usd = nil
-}
-
 // SetAssignedBy sets the "assigned_by" field.
 func (m *UserSubscriptionMutation) SetAssignedBy(i int64) {
 	m.assigned_by_user = &i
@@ -53640,7 +53466,7 @@ func (m *UserSubscriptionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserSubscriptionMutation) Fields() []string {
-	fields := make([]string, 0, 20)
+	fields := make([]string, 0, 17)
 	if m.created_at != nil {
 		fields = append(fields, usersubscription.FieldCreatedAt)
 	}
@@ -53682,15 +53508,6 @@ func (m *UserSubscriptionMutation) Fields() []string {
 	}
 	if m.monthly_usage_usd != nil {
 		fields = append(fields, usersubscription.FieldMonthlyUsageUsd)
-	}
-	if m.daily_bonus_usd != nil {
-		fields = append(fields, usersubscription.FieldDailyBonusUsd)
-	}
-	if m.weekly_bonus_usd != nil {
-		fields = append(fields, usersubscription.FieldWeeklyBonusUsd)
-	}
-	if m.monthly_bonus_usd != nil {
-		fields = append(fields, usersubscription.FieldMonthlyBonusUsd)
 	}
 	if m.assigned_by_user != nil {
 		fields = append(fields, usersubscription.FieldAssignedBy)
@@ -53737,12 +53554,6 @@ func (m *UserSubscriptionMutation) Field(name string) (ent.Value, bool) {
 		return m.WeeklyUsageUsd()
 	case usersubscription.FieldMonthlyUsageUsd:
 		return m.MonthlyUsageUsd()
-	case usersubscription.FieldDailyBonusUsd:
-		return m.DailyBonusUsd()
-	case usersubscription.FieldWeeklyBonusUsd:
-		return m.WeeklyBonusUsd()
-	case usersubscription.FieldMonthlyBonusUsd:
-		return m.MonthlyBonusUsd()
 	case usersubscription.FieldAssignedBy:
 		return m.AssignedBy()
 	case usersubscription.FieldAssignedAt:
@@ -53786,12 +53597,6 @@ func (m *UserSubscriptionMutation) OldField(ctx context.Context, name string) (e
 		return m.OldWeeklyUsageUsd(ctx)
 	case usersubscription.FieldMonthlyUsageUsd:
 		return m.OldMonthlyUsageUsd(ctx)
-	case usersubscription.FieldDailyBonusUsd:
-		return m.OldDailyBonusUsd(ctx)
-	case usersubscription.FieldWeeklyBonusUsd:
-		return m.OldWeeklyBonusUsd(ctx)
-	case usersubscription.FieldMonthlyBonusUsd:
-		return m.OldMonthlyBonusUsd(ctx)
 	case usersubscription.FieldAssignedBy:
 		return m.OldAssignedBy(ctx)
 	case usersubscription.FieldAssignedAt:
@@ -53905,27 +53710,6 @@ func (m *UserSubscriptionMutation) SetField(name string, value ent.Value) error 
 		}
 		m.SetMonthlyUsageUsd(v)
 		return nil
-	case usersubscription.FieldDailyBonusUsd:
-		v, ok := value.(float64)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetDailyBonusUsd(v)
-		return nil
-	case usersubscription.FieldWeeklyBonusUsd:
-		v, ok := value.(float64)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetWeeklyBonusUsd(v)
-		return nil
-	case usersubscription.FieldMonthlyBonusUsd:
-		v, ok := value.(float64)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetMonthlyBonusUsd(v)
-		return nil
 	case usersubscription.FieldAssignedBy:
 		v, ok := value.(int64)
 		if !ok {
@@ -53964,15 +53748,6 @@ func (m *UserSubscriptionMutation) AddedFields() []string {
 	if m.addmonthly_usage_usd != nil {
 		fields = append(fields, usersubscription.FieldMonthlyUsageUsd)
 	}
-	if m.adddaily_bonus_usd != nil {
-		fields = append(fields, usersubscription.FieldDailyBonusUsd)
-	}
-	if m.addweekly_bonus_usd != nil {
-		fields = append(fields, usersubscription.FieldWeeklyBonusUsd)
-	}
-	if m.addmonthly_bonus_usd != nil {
-		fields = append(fields, usersubscription.FieldMonthlyBonusUsd)
-	}
 	return fields
 }
 
@@ -53987,12 +53762,6 @@ func (m *UserSubscriptionMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedWeeklyUsageUsd()
 	case usersubscription.FieldMonthlyUsageUsd:
 		return m.AddedMonthlyUsageUsd()
-	case usersubscription.FieldDailyBonusUsd:
-		return m.AddedDailyBonusUsd()
-	case usersubscription.FieldWeeklyBonusUsd:
-		return m.AddedWeeklyBonusUsd()
-	case usersubscription.FieldMonthlyBonusUsd:
-		return m.AddedMonthlyBonusUsd()
 	}
 	return nil, false
 }
@@ -54022,27 +53791,6 @@ func (m *UserSubscriptionMutation) AddField(name string, value ent.Value) error 
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddMonthlyUsageUsd(v)
-		return nil
-	case usersubscription.FieldDailyBonusUsd:
-		v, ok := value.(float64)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.AddDailyBonusUsd(v)
-		return nil
-	case usersubscription.FieldWeeklyBonusUsd:
-		v, ok := value.(float64)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.AddWeeklyBonusUsd(v)
-		return nil
-	case usersubscription.FieldMonthlyBonusUsd:
-		v, ok := value.(float64)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.AddMonthlyBonusUsd(v)
 		return nil
 	}
 	return fmt.Errorf("unknown UserSubscription numeric field %s", name)
@@ -54151,15 +53899,6 @@ func (m *UserSubscriptionMutation) ResetField(name string) error {
 		return nil
 	case usersubscription.FieldMonthlyUsageUsd:
 		m.ResetMonthlyUsageUsd()
-		return nil
-	case usersubscription.FieldDailyBonusUsd:
-		m.ResetDailyBonusUsd()
-		return nil
-	case usersubscription.FieldWeeklyBonusUsd:
-		m.ResetWeeklyBonusUsd()
-		return nil
-	case usersubscription.FieldMonthlyBonusUsd:
-		m.ResetMonthlyBonusUsd()
 		return nil
 	case usersubscription.FieldAssignedBy:
 		m.ResetAssignedBy()

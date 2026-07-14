@@ -37,11 +37,10 @@ const (
 
 // Redeem type constants
 const (
-	RedeemTypeBalance           = "balance"
-	RedeemTypeConcurrency       = "concurrency"
-	RedeemTypeSubscription      = "subscription"
-	RedeemTypeSubscriptionQuota = "subscription_quota"
-	RedeemTypeInvitation        = "invitation"
+	RedeemTypeBalance      = "balance"
+	RedeemTypeConcurrency  = "concurrency"
+	RedeemTypeSubscription = "subscription"
+	RedeemTypeInvitation   = "invitation"
 )
 
 // PromoCode status constants

@@ -19,7 +19,6 @@ export interface RedeemHistoryItem {
   // Subscription-specific fields
   group_id?: number
   validity_days?: number
-  quota_period?: 'daily' | 'weekly' | 'monthly' | ''
   group?: {
     id: number
     name: string
@@ -37,13 +36,6 @@ export async function redeem(code: string): Promise<{
   value: number
   new_balance?: number
   new_concurrency?: number
-  group_id?: number
-  validity_days?: number
-  quota_period?: 'daily' | 'weekly' | 'monthly' | ''
-  group?: {
-    id: number
-    name: string
-  }
 }> {
   const payload: RedeemCodeRequest = { code }
 
@@ -53,13 +45,6 @@ export async function redeem(code: string): Promise<{
     value: number
     new_balance?: number
     new_concurrency?: number
-    group_id?: number
-    validity_days?: number
-    quota_period?: 'daily' | 'weekly' | 'monthly' | ''
-    group?: {
-      id: number
-      name: string
-    }
   }>('/redeem', payload)
 
   return data

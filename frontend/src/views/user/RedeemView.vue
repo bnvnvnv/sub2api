@@ -107,18 +107,12 @@
                     </p>
                     <p v-else-if="redeemResult.type === 'subscription'" class="font-medium">
                       {{ t('redeem.subscriptionAssigned') }}
-                      <span v-if="redeemResult.group"> - {{ redeemResult.group.name }}</span>
+                      <span v-if="redeemResult.group_name"> - {{ redeemResult.group_name }}</span>
                       <span v-if="redeemResult.validity_days">
                         ({{
                           t('redeem.subscriptionDays', { days: redeemResult.validity_days })
                         }})</span
                       >
-                    </p>
-                    <p v-else-if="redeemResult.type === 'subscription_quota'" class="font-medium">
-                      {{ t('redeem.subscriptionQuotaAdded') }}:
-                      ${{ redeemResult.value.toFixed(2) }} /
-                      {{ quotaPeriodLabel(redeemResult.quota_period) }}
-                      <span v-if="redeemResult.group"> - {{ redeemResult.group.name }}</span>
                     </p>
                     <p v-if="redeemResult.new_balance !== undefined">
                       {{ t('redeem.newBalance') }}:
@@ -375,11 +369,6 @@ const redeemResult = ref<{
   new_concurrency?: number
   group_name?: string
   validity_days?: number
-  quota_period?: string
-  group?: {
-    id: number
-    name: string
-  }
 } | null>(null)
 const errorMessage = ref('')
 
@@ -394,18 +383,7 @@ const isBalanceType = (type: string) => {
 }
 
 const isSubscriptionType = (type: string) => {
-  return type === 'subscription' || type === 'subscription_quota'
-}
-
-const isSubscriptionQuotaType = (type: string) => {
-  return type === 'subscription_quota'
-}
-
-const quotaPeriodLabel = (period?: string) => {
-  if (period === 'daily') return t('redeem.periods.daily')
-  if (period === 'weekly') return t('redeem.periods.weekly')
-  if (period === 'monthly') return t('redeem.periods.monthly')
-  return '-'
+  return type === 'subscription'
 }
 
 const isAdminAdjustment = (type: string) => {
@@ -423,8 +401,6 @@ const getHistoryItemTitle = (item: RedeemHistoryItem) => {
     return item.value >= 0 ? t('redeem.concurrencyAddedAdmin') : t('redeem.concurrencyReducedAdmin')
   } else if (item.type === 'subscription') {
     return t('redeem.subscriptionAssigned')
-  } else if (item.type === 'subscription_quota') {
-    return t('redeem.subscriptionQuotaAdded')
   }
   return t('common.unknown')
 }
@@ -433,10 +409,6 @@ const formatHistoryValue = (item: RedeemHistoryItem) => {
   if (isBalanceType(item.type)) {
     const sign = item.value >= 0 ? '+' : ''
     return `${sign}$${item.value.toFixed(2)}`
-  } else if (isSubscriptionQuotaType(item.type)) {
-    const groupName = item.group?.name || ''
-    const value = `+$${item.value.toFixed(2)} / ${quotaPeriodLabel(item.quota_period)}`
-    return groupName ? `${value} - ${groupName}` : value
   } else if (isSubscriptionType(item.type)) {
     // 订阅类型显示有效天数和分组名称
     const days = item.validity_days || Math.round(item.value)
@@ -478,7 +450,7 @@ const handleRedeem = async () => {
     await authStore.refreshUser()
 
     // If subscription type, immediately refresh subscription status
-    if (result.type === 'subscription' || result.type === 'subscription_quota') {
+    if (result.type === 'subscription') {
       try {
         await subscriptionStore.fetchActiveSubscriptions(true) // force refresh
       } catch (error) {

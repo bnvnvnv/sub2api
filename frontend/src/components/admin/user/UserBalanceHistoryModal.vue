@@ -203,8 +203,7 @@ const typeOptions = computed(() => [
   { value: 'admin_balance', label: t('admin.users.typeAdminBalance') },
   { value: 'concurrency', label: t('admin.users.typeConcurrency') },
   { value: 'admin_concurrency', label: t('admin.users.typeAdminConcurrency') },
-  { value: 'subscription', label: t('admin.users.typeSubscription') },
-  { value: 'subscription_quota', label: t('admin.users.typeSubscriptionQuota') }
+  { value: 'subscription', label: t('admin.users.typeSubscription') }
 ])
 
 // Watch modal open
@@ -243,15 +242,7 @@ const isAdminType = (type: string) => type === 'admin_balance' || type === 'admi
 const isBalanceType = (type: string) => type === 'balance' || type === 'admin_balance' || type === 'affiliate_balance'
 
 // Helper: check if subscription type
-const isSubscriptionType = (type: string) => type === 'subscription' || type === 'subscription_quota'
-const isSubscriptionQuotaType = (type: string) => type === 'subscription_quota'
-
-const quotaPeriodLabel = (period?: string) => {
-  if (period === 'daily') return t('redeem.periods.daily')
-  if (period === 'weekly') return t('redeem.periods.weekly')
-  if (period === 'monthly') return t('redeem.periods.monthly')
-  return '-'
-}
+const isSubscriptionType = (type: string) => type === 'subscription'
 
 // Icon name based on type
 const getIconName = (item: BalanceHistoryItem) => {
@@ -314,8 +305,6 @@ const getItemTitle = (item: BalanceHistoryItem) => {
       return item.value >= 0 ? t('redeem.concurrencyAddedAdmin') : t('redeem.concurrencyReducedAdmin')
     case 'subscription':
       return t('redeem.subscriptionAssigned')
-    case 'subscription_quota':
-      return t('redeem.subscriptionQuotaAdded')
     default:
       return t('common.unknown')
   }
@@ -326,11 +315,6 @@ const formatValue = (item: BalanceHistoryItem) => {
   if (isBalanceType(item.type)) {
     const sign = item.value >= 0 ? '+' : ''
     return `${sign}$${item.value.toFixed(2)}`
-  }
-  if (isSubscriptionQuotaType(item.type)) {
-    const groupName = item.group?.name || ''
-    const value = `+$${item.value.toFixed(2)} / ${quotaPeriodLabel(item.quota_period)}`
-    return groupName ? `${value} - ${groupName}` : value
   }
   if (isSubscriptionType(item.type)) {
     const days = item.validity_days || Math.round(item.value)

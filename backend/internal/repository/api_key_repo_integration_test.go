@@ -228,18 +228,6 @@ func (s *APIKeyRepoSuite) TestListByUserID() {
 	s.Require().Equal(int64(2), page.Total)
 }
 
-func (s *APIKeyRepoSuite) TestListByUserID_HidesOpenAIWebInternalKeys() {
-	user := s.mustCreateUser("listbyuser-hidden@test.com")
-	s.mustCreateApiKey(user.ID, "sk-list-hidden-1", "Visible Key", nil)
-	s.mustCreateApiKey(user.ID, "sk-list-hidden-2", service.OpenAIWebInternalAPIKeyNamePrefix+"group_1", nil)
-
-	keys, page, err := s.repo.ListByUserID(s.ctx, user.ID, pagination.PaginationParams{Page: 1, PageSize: 10}, service.APIKeyListFilters{})
-	s.Require().NoError(err)
-	s.Require().Len(keys, 1)
-	s.Require().Equal(int64(1), page.Total)
-	s.Require().Equal("Visible Key", keys[0].Name)
-}
-
 func (s *APIKeyRepoSuite) TestListByUserID_Pagination() {
 	user := s.mustCreateUser("paging@test.com")
 	for i := 0; i < 5; i++ {
@@ -327,17 +315,6 @@ func (s *APIKeyRepoSuite) TestSearchAPIKeys_NoKeyword() {
 	found, err := s.repo.SearchAPIKeys(s.ctx, user.ID, "", 10)
 	s.Require().NoError(err)
 	s.Require().Len(found, 2)
-}
-
-func (s *APIKeyRepoSuite) TestSearchAPIKeys_HidesOpenAIWebInternalKeys() {
-	user := s.mustCreateUser("searchhidden@test.com")
-	s.mustCreateApiKey(user.ID, "sk-hidden-search-1", "Visible Key", nil)
-	s.mustCreateApiKey(user.ID, "sk-hidden-search-2", service.OpenAIWebInternalAPIKeyNamePrefix+"group_9", nil)
-
-	found, err := s.repo.SearchAPIKeys(s.ctx, user.ID, "", 10)
-	s.Require().NoError(err)
-	s.Require().Len(found, 1)
-	s.Require().Equal("Visible Key", found[0].Name)
 }
 
 func (s *APIKeyRepoSuite) TestSearchAPIKeys_NoUserID() {

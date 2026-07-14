@@ -170,20 +170,6 @@ func (_c *RedeemCodeCreate) SetNillableValidityDays(v *int) *RedeemCodeCreate {
 	return _c
 }
 
-// SetQuotaPeriod sets the "quota_period" field.
-func (_c *RedeemCodeCreate) SetQuotaPeriod(v string) *RedeemCodeCreate {
-	_c.mutation.SetQuotaPeriod(v)
-	return _c
-}
-
-// SetNillableQuotaPeriod sets the "quota_period" field if the given value is not nil.
-func (_c *RedeemCodeCreate) SetNillableQuotaPeriod(v *string) *RedeemCodeCreate {
-	if v != nil {
-		_c.SetQuotaPeriod(*v)
-	}
-	return _c
-}
-
 // SetUserID sets the "user" edge to the User entity by ID.
 func (_c *RedeemCodeCreate) SetUserID(id int64) *RedeemCodeCreate {
 	_c.mutation.SetUserID(id)
@@ -263,10 +249,6 @@ func (_c *RedeemCodeCreate) defaults() {
 		v := redeemcode.DefaultValidityDays
 		_c.mutation.SetValidityDays(v)
 	}
-	if _, ok := _c.mutation.QuotaPeriod(); !ok {
-		v := redeemcode.DefaultQuotaPeriod
-		_c.mutation.SetQuotaPeriod(v)
-	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -303,14 +285,6 @@ func (_c *RedeemCodeCreate) check() error {
 	}
 	if _, ok := _c.mutation.ValidityDays(); !ok {
 		return &ValidationError{Name: "validity_days", err: errors.New(`ent: missing required field "RedeemCode.validity_days"`)}
-	}
-	if _, ok := _c.mutation.QuotaPeriod(); !ok {
-		return &ValidationError{Name: "quota_period", err: errors.New(`ent: missing required field "RedeemCode.quota_period"`)}
-	}
-	if v, ok := _c.mutation.QuotaPeriod(); ok {
-		if err := redeemcode.QuotaPeriodValidator(v); err != nil {
-			return &ValidationError{Name: "quota_period", err: fmt.Errorf(`ent: validator failed for field "RedeemCode.quota_period": %w`, err)}
-		}
 	}
 	return nil
 }
@@ -374,10 +348,6 @@ func (_c *RedeemCodeCreate) createSpec() (*RedeemCode, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.ValidityDays(); ok {
 		_spec.SetField(redeemcode.FieldValidityDays, field.TypeInt, value)
 		_node.ValidityDays = value
-	}
-	if value, ok := _c.mutation.QuotaPeriod(); ok {
-		_spec.SetField(redeemcode.FieldQuotaPeriod, field.TypeString, value)
-		_node.QuotaPeriod = value
 	}
 	if nodes := _c.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -627,18 +597,6 @@ func (u *RedeemCodeUpsert) AddValidityDays(v int) *RedeemCodeUpsert {
 	return u
 }
 
-// SetQuotaPeriod sets the "quota_period" field.
-func (u *RedeemCodeUpsert) SetQuotaPeriod(v string) *RedeemCodeUpsert {
-	u.Set(redeemcode.FieldQuotaPeriod, v)
-	return u
-}
-
-// UpdateQuotaPeriod sets the "quota_period" field to the value that was provided on create.
-func (u *RedeemCodeUpsert) UpdateQuotaPeriod() *RedeemCodeUpsert {
-	u.SetExcluded(redeemcode.FieldQuotaPeriod)
-	return u
-}
-
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
@@ -870,20 +828,6 @@ func (u *RedeemCodeUpsertOne) AddValidityDays(v int) *RedeemCodeUpsertOne {
 func (u *RedeemCodeUpsertOne) UpdateValidityDays() *RedeemCodeUpsertOne {
 	return u.Update(func(s *RedeemCodeUpsert) {
 		s.UpdateValidityDays()
-	})
-}
-
-// SetQuotaPeriod sets the "quota_period" field.
-func (u *RedeemCodeUpsertOne) SetQuotaPeriod(v string) *RedeemCodeUpsertOne {
-	return u.Update(func(s *RedeemCodeUpsert) {
-		s.SetQuotaPeriod(v)
-	})
-}
-
-// UpdateQuotaPeriod sets the "quota_period" field to the value that was provided on create.
-func (u *RedeemCodeUpsertOne) UpdateQuotaPeriod() *RedeemCodeUpsertOne {
-	return u.Update(func(s *RedeemCodeUpsert) {
-		s.UpdateQuotaPeriod()
 	})
 }
 
@@ -1284,20 +1228,6 @@ func (u *RedeemCodeUpsertBulk) AddValidityDays(v int) *RedeemCodeUpsertBulk {
 func (u *RedeemCodeUpsertBulk) UpdateValidityDays() *RedeemCodeUpsertBulk {
 	return u.Update(func(s *RedeemCodeUpsert) {
 		s.UpdateValidityDays()
-	})
-}
-
-// SetQuotaPeriod sets the "quota_period" field.
-func (u *RedeemCodeUpsertBulk) SetQuotaPeriod(v string) *RedeemCodeUpsertBulk {
-	return u.Update(func(s *RedeemCodeUpsert) {
-		s.SetQuotaPeriod(v)
-	})
-}
-
-// UpdateQuotaPeriod sets the "quota_period" field to the value that was provided on create.
-func (u *RedeemCodeUpsertBulk) UpdateQuotaPeriod() *RedeemCodeUpsertBulk {
-	return u.Update(func(s *RedeemCodeUpsert) {
-		s.UpdateQuotaPeriod()
 	})
 }
 
