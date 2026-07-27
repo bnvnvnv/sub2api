@@ -813,7 +813,16 @@ export interface UpdateGroupRequest {
 export type AccountPlatform = 'anthropic' | 'openai' | 'gemini' | 'antigravity' | 'grok'
 export type AccountType = 'oauth' | 'setup-token' | 'apikey' | 'upstream' | 'bedrock' | 'service_account'
 export type OAuthAddMethod = 'oauth' | 'setup-token'
-export type ProxyProtocol = 'http' | 'https' | 'socks5' | 'socks5h'
+export type ProxyProtocol =
+  | 'http'
+  | 'https'
+  | 'socks5'
+  | 'socks5h'
+  | 'ss'
+  | 'anytls'
+  | 'trojan'
+  | 'vless'
+  | 'hysteria2'
 
 // Claude Model type (returned by /v1/models and account models API)
 export interface ClaudeModel {

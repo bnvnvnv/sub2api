@@ -11,7 +11,7 @@
 // 新实现使用统一的客户端池：
 // 1. 相同配置复用同一 http.Client 实例
 // 2. 复用 Transport 连接池，减少 TCP/TLS 握手开销
-// 3. 支持 HTTP/HTTPS/SOCKS5/SOCKS5H/SS 代理
+// 3. 支持 HTTP/HTTPS/SOCKS5/SOCKS5H 代理
 // 4. 代理配置失败时直接返回错误，不会回退到直连（避免 IP 关联风险）
 package httpclient
 
@@ -25,6 +25,7 @@ import (
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/proxyurl"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/proxyutil"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/servertiming"
 	"github.com/Wei-Shaw/sub2api/internal/util/urlvalidator"
 )
 
@@ -40,7 +41,7 @@ const (
 
 // Options 定义共享 HTTP 客户端的构建参数
 type Options struct {
-	ProxyURL              string        // 代理 URL（支持 http/https/socks5/socks5h/ss）
+	ProxyURL              string        // 代理 URL（支持 http/https/socks5/socks5h）
 	Timeout               time.Duration // 请求总超时时间
 	ResponseHeaderTimeout time.Duration // 等待响应头超时时间
 	InsecureSkipVerify    bool          // 是否跳过 TLS 证书验证（已禁用，不允许设置为 true）
@@ -92,6 +93,7 @@ func buildClient(opts Options) (*http.Client, error) {
 	if opts.ValidateResolvedIP && !opts.AllowPrivateHosts {
 		rt = newValidatedTransport(transport)
 	}
+	rt = servertiming.WrapRoundTripper(rt)
 	return &http.Client{
 		Transport: rt,
 		Timeout:   opts.Timeout,

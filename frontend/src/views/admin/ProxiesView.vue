@@ -76,6 +76,9 @@
             <button @click="showImportData = true" class="btn btn-secondary">
               {{ t('admin.proxies.dataImport') }}
             </button>
+            <button @click="showSubscriptionImport = true" class="btn btn-secondary">
+              {{ t('admin.proxies.subscriptionImport') }}
+            </button>
             <button @click="showExportDataDialog = true" class="btn btn-secondary">
               {{ selectedCount > 0 ? t('admin.proxies.dataExportSelected') : t('admin.proxies.dataExport') }}
             </button>
@@ -466,22 +469,22 @@
           </div>
         </div>
         <div>
-          <label class="input-label">{{ t('admin.proxies.username') }}</label>
+          <label class="input-label">{{ getProxyPrimaryCredentialLabel(createForm.protocol, t) }}</label>
           <input
             v-model="createForm.username"
             type="text"
             class="input"
-            :placeholder="t('admin.proxies.optionalAuth')"
+            :placeholder="getProxyPrimaryCredentialPlaceholder(createForm.protocol, t)"
           />
         </div>
         <div>
-          <label class="input-label">{{ t('admin.proxies.password') }}</label>
+          <label class="input-label">{{ getProxySecretLabel(createForm.protocol, t) }}</label>
           <div class="relative">
             <input
               v-model="createForm.password"
               :type="createPasswordVisible ? 'text' : 'password'"
               class="input pr-10"
-              :placeholder="t('admin.proxies.optionalAuth')"
+              :placeholder="getProxySecretPlaceholder(createForm.protocol, t)"
             />
             <button
               type="button"
@@ -699,16 +702,21 @@
           </div>
         </div>
         <div>
-          <label class="input-label">{{ t('admin.proxies.username') }}</label>
-          <input v-model="editForm.username" type="text" class="input" />
+          <label class="input-label">{{ getProxyPrimaryCredentialLabel(editForm.protocol, t) }}</label>
+          <input
+            v-model="editForm.username"
+            type="text"
+            class="input"
+            :placeholder="getProxyPrimaryCredentialPlaceholder(editForm.protocol, t)"
+          />
         </div>
         <div>
-          <label class="input-label">{{ t('admin.proxies.password') }}</label>
+          <label class="input-label">{{ getProxySecretLabel(editForm.protocol, t) }}</label>
           <div class="relative">
             <input
               v-model="editForm.password"
               :type="editPasswordVisible ? 'text' : 'password'"
-              :placeholder="t('admin.proxies.leaveEmptyToKeep')"
+              :placeholder="editPasswordDirty ? getProxySecretPlaceholder(editForm.protocol, t) : t('admin.proxies.leaveEmptyToKeep')"
               class="input pr-10"
               @input="editPasswordDirty = true"
             />
@@ -838,6 +846,11 @@
       :show="showImportData"
       @close="showImportData = false"
       @imported="handleDataImported"
+    />
+    <ProxySubscriptionImportDialog
+      :show="showSubscriptionImport"
+      @close="showSubscriptionImport = false"
+      @imported="handleSubscriptionImported"
     />
 
     <BaseDialog
@@ -978,6 +991,7 @@ import BaseDialog from '@/components/common/BaseDialog.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import ImportDataModal from '@/components/admin/proxy/ImportDataModal.vue'
+import ProxySubscriptionImportDialog from '@/components/admin/proxy/ProxySubscriptionImportDialog.vue'
 import Select from '@/components/common/Select.vue'
 import ProxyAdBanner from '@/components/common/ProxyAdBanner.vue'
 import Icon from '@/components/icons/Icon.vue'
@@ -988,6 +1002,14 @@ import { useTableSelection } from '@/composables/useTableSelection'
 import { getPersistedPageSize } from '@/composables/usePersistedPageSize'
 import { formatDateTime } from '@/utils/format'
 import { proxyExpiryBadgeClass, proxyExpiryLabelKey } from '@/utils/proxyExpiry'
+import {
+  getProxyPrimaryCredentialLabel,
+  getProxyPrimaryCredentialPlaceholder,
+  getProxyProtocolOptions,
+  getProxySecretLabel,
+  getProxySecretPlaceholder,
+  validateProxyProtocolCredentials
+} from '@/extensions/proxyProtocols'
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -1009,13 +1031,7 @@ const columns = computed<Column[]>(() => [
 ])
 
 // Filter options
-const protocolOptions = computed(() => [
-  { value: '', label: t('admin.proxies.allProtocols') },
-  { value: 'http', label: 'HTTP' },
-  { value: 'https', label: 'HTTPS' },
-  { value: 'socks5', label: 'SOCKS5' },
-  { value: 'socks5h', label: 'SOCKS5H' }
-])
+const protocolOptions = computed(() => getProxyProtocolOptions(t, true))
 
 const statusOptions = computed(() => [
   { value: '', label: t('admin.proxies.allStatus') },
@@ -1025,12 +1041,7 @@ const statusOptions = computed(() => [
 ])
 
 // Form options
-const protocolSelectOptions = computed(() => [
-  { value: 'http', label: t('admin.proxies.protocols.http') },
-  { value: 'https', label: t('admin.proxies.protocols.https') },
-  { value: 'socks5', label: t('admin.proxies.protocols.socks5') },
-  { value: 'socks5h', label: t('admin.proxies.protocols.socks5h') }
-])
+const protocolSelectOptions = computed(() => getProxyProtocolOptions(t))
 
 const editStatusOptions = computed(() => [
   { value: 'active', label: t('admin.accounts.status.active') },
@@ -1063,6 +1074,7 @@ const showEditModal = ref(false)
 const editPasswordVisible = ref(false)
 const editPasswordDirty = ref(false)
 const showImportData = ref(false)
+const showSubscriptionImport = ref(false)
 const showDeleteDialog = ref(false)
 const showBatchDeleteDialog = ref(false)
 const showExportDataDialog = ref(false)
@@ -1275,6 +1287,11 @@ const handleDataImported = () => {
   loadProxies()
 }
 
+const handleSubscriptionImported = () => {
+  showSubscriptionImport.value = false
+  loadProxies()
+}
+
 // Parse proxy URL: protocol://user:pass@host:port or protocol://host:port
 const parseProxyUrl = (
   line: string
@@ -1377,6 +1394,16 @@ const handleCreateProxy = async () => {
     appStore.showError(t('admin.proxies.portInvalid'))
     return
   }
+  const credentialError = validateProxyProtocolCredentials(
+    createForm.protocol,
+    createForm.username,
+    createForm.password,
+    t
+  )
+  if (credentialError) {
+    appStore.showError(credentialError)
+    return
+  }
   submitting.value = true
   try {
     await adminAPI.proxies.create({
@@ -1439,6 +1466,19 @@ const handleUpdateProxy = async () => {
   }
   if (editForm.port < 1 || editForm.port > 65535) {
     appStore.showError(t('admin.proxies.portInvalid'))
+    return
+  }
+  const editPasswordForValidation = editPasswordDirty.value
+    ? editForm.password
+    : editForm.password || editingProxy.value.password || ''
+  const credentialError = validateProxyProtocolCredentials(
+    editForm.protocol,
+    editForm.username,
+    editPasswordForValidation,
+    t
+  )
+  if (credentialError) {
+    appStore.showError(credentialError)
     return
   }
 

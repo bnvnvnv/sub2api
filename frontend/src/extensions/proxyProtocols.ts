@@ -1,10 +1,12 @@
+import type { ProxyProtocol } from '@/types'
+
 type TranslateFn = (key: string, ...args: unknown[]) => string
 
 export const baseProxyProtocols = ['http', 'https', 'socks5', 'socks5h', 'ss'] as const
 export const extendedProxyProtocols = ['anytls', 'trojan', 'vless', 'hysteria2'] as const
 export const proxyProtocols = [...baseProxyProtocols, ...extendedProxyProtocols] as const
 
-export type ProxyProtocol = (typeof proxyProtocols)[number]
+export type { ProxyProtocol }
 
 const secretRequiredProtocols = new Set<ProxyProtocol>([
   'ss',

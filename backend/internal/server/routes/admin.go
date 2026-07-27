@@ -56,7 +56,6 @@ func RegisterAdminRoutes(
 
 		// 代理管理
 		registerProxyRoutes(admin, h, stepUpAuth)
-		registerProxySubscriptionRoutes(admin, h)
 
 		// 卡密管理
 		registerRedeemCodeRoutes(admin, h)
@@ -477,6 +476,8 @@ func registerGrokOAuthRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 func registerProxyRoutes(admin *gin.RouterGroup, h *handler.Handlers, stepUpAuth middleware.StepUpAuthMiddleware) {
 	proxies := admin.Group("/proxies")
 	{
+		registerProxySubscriptionRoutes(proxies, h)
+
 		proxies.GET("", h.Admin.Proxy.List)
 		proxies.GET("/all", h.Admin.Proxy.GetAll)
 		// 代理导出泄露账号密码原文——要求 step-up 2FA
